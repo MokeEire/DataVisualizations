@@ -1,0 +1,89 @@
+---
+title: "News Consumption"
+output: html_notebook
+---
+
+```{r setup}
+library(extrafont)
+library(tidyverse)
+library(lubridate)
+library(here)
+library(haven)
+library(labelled)
+
+source("theme_mark.R")
+
+```
+
+# Data
+
+[Pew Research Center, Journalism & Media: Local News Survey](https://www.journalism.org/dataset/local-news-survey/)
+
+```{r}
+pew_folder = here("../..", "Datasets", "Pew Research", "Local-News-Survey")
+
+pew_sav_file = list.files(pew_folder, pattern = "\\.sav$", full.names = T)
+
+local_news_df = read_sav(pew_sav_file)
+glimpse(local_news_df)
+```
+
+Convert labels from `labelled` data to factors using the {labelled} package.
+
+```{r}
+local_news_converted = local_news_df %>% 
+  mutate(across(where(is.labelled), to_factor))
+
+glimpse(local_news_converted)
+```
+
+How closely do respondents follow news - from international news to news about their neighbourhood?
+
+```{r}
+news_types = c("NEWS_LEVELa" = "International news", 
+               "NEWS_LEVELb" = "National news", 
+               "NEWS_LEVELc" = "Local news", 
+               "NEWS_LEVELd" = "News about your neighbourhood")
+
+news_type_weighted = local_news_converted %>% 
+  select(respid, contains("NEWS_LEVEL"), WEIGHT) %>% 
+  pivot_longer(cols = contains("NEWS_LEVEL"), names_to = "news_type", values_to = "response") %>% 
+  count(news_type, response, wt = WEIGHT) %>% 
+  mutate(news_type = str_replace_all(news_type, news_types),
+         news_type = fct_rev(factor(news_type, labels = str_wrap(news_types, 20), ordered = T)),
+         response = fct_rev(factor(response, ordered = T))) %>% 
+  group_by(news_type) %>% 
+  mutate(pct = n/sum(n)) %>% 
+  filter(response != "Refused") %>% 
+  arrange(news_type, response) %>% 
+  mutate(lab_pos = cumsum(pct) - pct/2)
+
+news_type_weighted
+```
+
+What percent of people follow each type of news **at least somewhat closely**?
+
+```{r}
+news_type_weighted %>% 
+  pivot_wider(id_cols = news_type, names_from = "response", values_from = "pct") %>% 
+  arrange(desc(news_type))
+```
+
+
+```{r}
+
+news_type_weighted %>% 
+  ggplot(., aes(y = news_type,  x = n, group = news_type, fill = response))+
+  geom_col(position = position_fill())+
+  geom_text(data = filter(news_type_weighted, pct > .05), 
+            aes(y = news_type, x = lab_pos, group = news_type, label = scales::percent(pct, accuracy = 1)), 
+            colour = my_col_pal[3], size = 5)+
+  scale_x_continuous(name = NULL, labels = scales::percent)+
+  scale_y_discrete(name = NULL, drop=T)+
+  scale_fill_manual(name = NULL, values = my_col_pal[c(4,6,8,10)])+
+  labs(title = "News consumption habits", subtitle = '"How closely do you follow..."',
+       caption = str_c("Source:\n", "Pew Research Center - 2018 Local News Survey"))+
+  theme_mark(plots_pane = F)+
+  theme(legend.position = "top")
+```
+
