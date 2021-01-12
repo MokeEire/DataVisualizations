@@ -1,0 +1,1035 @@
+---
+title: "COVIZ-19"
+summary: "Some COVID data viz, without misleading the public."
+tags: [R, dataviz]
+categories: [R, dataviz] 
+date: "2020-09-30"
+slug: "coviz-19"
+image: "projects/coviz/coviz_files/figure-html/global-daily-cases-1.svg"
+code: false
+code_link: https://github.com/MokeEire/DataVisualizations/blob/master/policy_wheel.R
+data_link: https://github.com/CSSEGISandData/COVID-19/
+output: 
+  blogdown::html_page
+---
+
+```{r setup, include=F}
+library(extrafont)
+library(tidyverse)
+library(janitor)
+library(here)
+library(lubridate)
+library(ggtext)
+library(ggrepel)
+library(gghighlight)
+library(reactable)
+
+here("static", "R", c("theme_mark.R", "blogdown_functions.R")) %>% 
+  walk(source)
+
+viz_colours = my_col_pal[-1:-4]
+
+
+jhu_source_caption = str_c(
+  "**Source(s)**: 2019 Novel Coronavirus Data Repository by Johns Hopkins CSSE<br>
+  Oxford COVID-19 Government Response Tracker, Blavatnik School of Government<br><br>",
+  "<span style='font-size:14px;color:", viz_colours[7], "'>Visualized by @MokeEire</span>")
+
+source_caption = function(sources){
+  if(missing(sources)){
+    stop("Need to provide a vector of sources to the sources argument")
+  }
+  
+  str_c(
+    "**Source", if(length(sources) > 1){"s"}, "**: ",
+    "<span style='line-height:1.25;'>", str_c(sources, collapse = "<br>"), "</span>",
+    "<br><br>",
+    "<span style='font-size:14px;color:", viz_colours[7], 
+    "'>Visualized by @MokeEire</span>"
+  )
+}
+
+jhu_source = "2019 Novel Coronavirus Data Repository by Johns Hopkins CSSE"
+oxford_source = "Oxford COVID-19 Government Response Tracker, Blavatnik School of Government"
+
+knitr::opts_chunk$set(error = TRUE, echo=T, message=F, warning=F, fig.width=10, fig.height=7, dev="svg")
+
+```
+
+<!-- This is the link to deliver AlpineJS from CDN. This is required for the dropdown to work-->
+<!-- Any attributes that begin with "x-" are Alpine directives -->
+<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>   
+
+```{r covid-data, include=F, message = F}
+folder_url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+files = c("confirmed", "recovered", "deaths")
+
+
+# Because each file is in the folder, paste together the filenames
+case_urls = str_c(folder_url, 
+                  # e.g. time_series_covid19_confirmed_global.csv
+                  "time_series_covid19_", files, "_global.csv") %>% 
+  # Setting names so we can map over each file later
+  set_names(files)
+
+```
+
+
+```{r read-one-file, include=F, eval=F, message=F}
+read_csv(case_urls["confirmed"]) %>% 
+  select(1:10)
+```
+
+```{r read-one-file-tbl, include=F, message=F, eval=F}
+read_csv(case_urls["confirmed"]) %>% 
+  select(1:10) %>% 
+  reactable(borderless=T, highlight=T, resizable = T, compact=T,
+            defaultColDef = colDef(
+              format = colFormat(
+                separators = T
+              )
+            ),
+            columns = list(
+              `Province/State` = colDef(
+                width = 150
+              ),
+              `Country/Region` = colDef(
+                width = 150
+              )
+            ))
+```
+
+
+
+```{r read-in-data, message=F, echo=F, include=F}
+covid_data = imap_dfr(case_urls, 
+                      ~read_csv(file = .x), 
+                      .id = "case_type") %>% 
+    select(`Province/State`, `Country/Region`, case_type, everything())
+
+head(covid_data)%>% 
+  select(1:10)
+```
+
+
+```{r pivot-data, include=F, echo=F}
+covid_data_pivot = covid_data %>% 
+  pivot_longer(cols = c(-1:-5), 
+               names_to = "date", values_to = "total_cases",
+               names_transform = list(date = mdy)) %>% 
+  clean_names()
+
+covid_data_pivot
+
+```
+
+
+```{r countries-with-region-info, eval=F, echo=F}
+covid_data_pivot %>% 
+  filter(!is.na(province_state)) %>% 
+  distinct(country_region)
+```
+
+
+```{r country-count, eval=F, echo=F}
+covid_data_pivot %>% 
+  distinct(country_region) %>% 
+  tally()
+```
+
+
+```{r ireland-cases, eval=F, echo=F}
+covid_data_pivot %>% 
+  filter(country_region == "Ireland", total_cases > 0)
+```
+
+
+```{r ireland-case-types, include=F, echo=F}
+covid_ireland = covid_data_pivot %>% 
+  filter(country_region == "Ireland") %>% 
+  mutate(case_type = factor(case_type, levels = c("confirmed", "recovered", "deaths")))
+
+# Set our colours
+case_pal = set_names(viz_colours[c(3,7,6)], unique(covid_ireland$case_type))
+
+covid_ireland %>%
+  # Start ggplot
+  ggplot(., aes(x = date, y = total_cases, colour = case_type))+
+  # Area geom
+  geom_line(alpha = .9, size = 1)+
+  # Case labels
+  geom_text(data = filter(covid_ireland, date == max(date)),
+            aes(x = date+days(2), y = total_cases, label = str_to_title(case_type), 
+                colour = case_type),
+            size = 5, hjust = 0, fontface = "bold")+
+  # Y axis
+  scale_y_continuous(labels = scales::comma, 
+                     expand = expansion(mult = c(0,.15), add = c(0, 3)))+
+  # X axis
+  scale_x_date(date_breaks = "1 months", date_labels = "%b", 
+               expand = expansion(mult = c(0,.15), add = c(0, 1.9)))+
+  # Area fill
+  scale_fill_manual(values = case_pal)+
+  # Label colour
+  scale_colour_manual(values = case_pal)+
+  # Plot labels
+  labs(y = "Cases", x = NULL, 
+       title = "Cumulative Cases Timeline - Ireland", 
+       caption = source_caption(sources = jhu_source))+
+  theme_mark(base_size = 10, md=T)+
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank())
+```
+
+
+
+```{r calc-new-cases, include=F, echo=F}
+covid_data_new = covid_data_pivot %>% 
+  group_by(country_region, province_state, case_type) %>% 
+  mutate(daily_cases = total_cases - lag(total_cases, default = 0)) %>% 
+  ungroup()
+
+# Ireland's last 5 days of confirmed cases
+covid_data_new %>% 
+  filter(country_region == "Ireland", case_type == "confirmed") %>% 
+  slice_max(date, n = 5)
+  
+```
+
+
+```{r clean-country-names, include=F, echo=F}
+covid_data_clean = covid_data_new %>% 
+  # Sort by country, state, and date
+  arrange(country_region, province_state, date) %>% 
+  # Correct country naming (we'll see why in a moment)
+  mutate(country_region = case_when(
+    country_region == "Korea, South" ~ "South Korea",
+    country_region == "Burma" ~ "Myanmar",
+    country_region == "Congo (Brazzaville)" ~ "Congo, Rep.",
+    country_region == "Congo (Kinshasa)" ~ "Congo, Dem. Rep.",
+    country_region == "Saint Vincent and the Grenadines" ~ "St. Vincent and the Grenadines",
+    country_region == "Saint Kitts and Nevis" ~ "St. Kitts and Nevis",
+    T ~ country_region
+  )) %>% 
+  # Remove the Diamond Princess
+  filter(country_region != "Diamond Princess")
+
+head(covid_data_clean)
+
+```
+
+
+```{r covid-data-clean, message = F, include=F, echo=F}
+# Set filename
+# Thanks to: https://blogdown-demo.rbind.io/2018/02/27/r-file-paths/
+world_pop_file = "world_bank_pop_2019.csv"
+# Clean the column names and then change country names to match the COVID data
+world_pop = read_csv(world_pop_file) %>% 
+  clean_names() %>% 
+  rename(population = x2019_yr2019) %>% 
+  mutate(country_name = case_when(
+    country_name == "Korea, Rep." ~ "South Korea",
+    country_name == "Iran, Islamic Rep." ~ "Iran",
+    country_name == "Hong Kong SAR, China" ~ "Hong Kong",
+    country_name == "United States" ~ "US",
+    country_name == "Egypt, Arab Rep." ~ "Egypt",
+    country_name == "Syrian Arab Republic" ~ "Syria",
+    country_name == "Russian Federation" ~ "Russia",
+    country_name == "American Samoa" ~ "Samoa",
+    country_name == "Czech Republic" ~ "Czechia",
+    country_name == "Kyrgyz Republic" ~ "Kyrgyzstan",
+    country_name == "Lao PDR" ~ "Laos",
+    country_name == "St. Lucia" ~ "Saint Lucia",
+    country_name == "Slovak Republic" ~ "Slovakia",
+    country_name == "Bolivia (Plurinational State of)" ~ "Bolivia",
+    str_detect(country_name,"Ivoire") ~ "Cote d'Ivoire",
+    country_name == "Moldova, Republic of" ~ "Moldova",
+    country_name == "Russian Federation" ~ "Russia",
+    country_name == "Venezuela, RB" ~ "Venezuela",
+    country_name == "Gambia, The" ~ "Gambia",
+    country_name == "Bahamas, The" ~ "Bahamas",
+    country_name == "Brunei Darussalam" ~ "Brunei",
+    country_name == "Cameroon, Republic of" ~ "Cameroon",
+    country_name == "Yemen, Rep." ~ "Yemen",
+    T ~ str_squish(country_name)
+  ))
+
+# Join population data by country
+covid_pop_df = covid_data_clean  %>% 
+  left_join(
+    select(world_pop, country_name, population), by = c("country_region" = "country_name")
+  )
+
+```
+
+
+```{r covid-country-level, include=F, echo=F}
+# country df
+covid_country_level = covid_pop_df %>% 
+  group_by(country_region, date, case_type, population) %>% 
+  # Calculate Country level cases for each case type over time
+  summarise(total_cases = sum(total_cases, na.rm=T),
+            daily_cases = sum(daily_cases, na.rm=T)) %>% 
+  ungroup() %>% 
+  # Calculate case rates relative to population size
+  mutate(total_cases_proportion = total_cases/population,
+         total_cases_per_100k = total_cases_proportion*100000,
+         daily_cases_proportion = daily_cases/population,
+         daily_cases_per_100k = daily_cases_proportion*100000)
+
+tail(filter(covid_country_level, country_region == "Ireland"))
+```
+
+
+```{r aggregate-to-global, include=F, echo=F}
+covid_global = covid_country_level %>% 
+  group_by(date, case_type) %>% 
+  summarise(total_cases = sum(total_cases, na.rm=T),
+            daily_cases = sum(daily_cases, na.rm=T)) %>% 
+  ungroup() %>% # Always remember to ungroup!
+  mutate(case_type = factor(case_type, levels = c("confirmed", "recovered", "deaths")))
+
+covid_global
+```
+
+
+```{r create-labels, include=F, echo=F}
+# Use max values for each case type as the label position
+case_labels = covid_global %>% 
+  group_by(case_type) %>% 
+  top_n(1, total_cases) %>% 
+  ungroup() %>% 
+  mutate(date = max(date) + days(2),
+         total_cases = total_cases)
+
+# For monthly labels, I want the label to be in the middle of the month (including current month)
+# As a result we can't really use today()
+
+global_date_labels = seq(to = max(covid_global$date), from = ymd("2020-01-15"), by = "1 month")
+
+global_date_ticks = seq.Date(to = max(covid_global$date), from = ymd("2020-01-01"), by = "1 month")
+```
+
+```{r global-daily-cases-code, echo=F, include=F}
+covid_global %>% 
+  # Start ggplot
+  ggplot(., aes(x = date, y = total_cases, fill = case_type))+
+  # Area geom
+  stat_smooth(geom = "area", span = .35, alpha = .9)+
+  # Case labels
+  geom_text(data = case_labels,
+            aes(x = date, y = total_cases, label = str_to_title(case_type), 
+                colour = case_type),
+            size = 5, hjust = 0, fontface = "bold", nudge_y = .5)+
+  # Y axis
+  scale_y_continuous(labels = scales::comma, breaks = scales::pretty_breaks(), 
+             expand = expansion(mult = c(0,.125), add = c(0, 2)))+
+  # X axis
+  scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+             date_labels = "%b", 
+             expand = expansion(mult = c(0,.15), add = c(0, 1.9)))+
+  # Area fill
+  scale_fill_manual(values = case_pal)+
+  # Label colour
+  scale_colour_manual(values = case_pal)+
+  # Plot labels
+  labs(y = "Cases", x = NULL, 
+       title = "COVID-19 Global Cases",
+       subtitle = str_c("Cumulative cases (as of ", 
+                     stamp_date("Oct 1 1979")(today()), ")"),
+       caption = source_caption(sources = jhu_source))+
+  theme_mark(base_size = 10, md=T)+
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank())
+```
+
+```{r global-daily-cases, echo=F, eval=F}
+
+covid_global %>% 
+  # Start ggplot
+  ggplot(., aes(x = date, y = total_cases, fill = case_type))+
+  # Area geom
+  stat_smooth(geom = "area", span = .35, alpha = .9)+
+  # Case labels
+  geom_text(data = case_labels,
+            aes(x = date, y = total_cases, label = str_to_title(case_type), 
+                colour = case_type),
+            size = 5, hjust = 0, fontface = "bold", nudge_y = .5)+
+  # Y axis
+  scale_y_continuous(labels = scales::comma, breaks = scales::pretty_breaks(), 
+             expand = expansion(mult = c(0,.125), add = c(0, 2)))+
+  # X axis
+  scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+             date_labels = "%b", 
+             expand = expansion(mult = c(0,.15), add = c(0, 1.9)))+
+  # Area fill
+  scale_fill_manual(values = case_pal)+
+  # Label colour
+  scale_colour_manual(values = case_pal)+
+  # Plot labels
+  labs(y = "Cases", x = NULL, 
+       title = "COVID-19 Global Cases",
+       subtitle = str_c("Cumulative cases (as of ", 
+                     stamp_date("Oct 1 1979")(today()), ")"),
+       caption = source_caption(sources = jhu_source))+
+  theme_mark(base_size = 10, md=T)+
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank())
+        
+```
+
+```{r country-labels, include=F, echo=F}
+# Country labels
+country_labels = covid_country_level %>% 
+  # Group by country
+  group_by(country_region) %>% 
+  # Select confirmed cases on the most recent date
+  filter(case_type == "confirmed", date == max(date)) %>% 
+  ungroup() %>% 
+  # Take the top 5, ordered by daily cases => this is now slice_max()
+  slice_max(n = 5, total_cases) %>% 
+  mutate(date =max(date) + days(2)) %>% # Add two days to the date for the label position
+  arrange(-total_cases)
+```
+
+
+```{r country-daily-cases-code, include=F, echo=F}
+top_country_pal = viz_colours[1:5]
+
+covid_country_level %>% 
+  # Select only confirmed cases
+  filter(case_type == "confirmed") %>% 
+  # Start ggplot
+  ggplot(., aes(x = date, 
+                y = total_cases, 
+                group = country_region, 
+                colour = country_region))+
+  # Line geom
+  geom_line(size = 1)+
+  # Highlight cases which are in our labelling dataframe
+  gghighlight(max(total_cases) >= min(country_labels$total_cases), 
+              max_highlight = 5, 
+              unhighlighted_params = list(colour = my_col_pal[3], 
+                                          size = .8, 
+                                          alpha = .6), 
+              use_direct_label = F)+
+  # Country labels
+  geom_text(data = country_labels,
+            aes(x = date, y = total_cases, 
+                label = country_region, 
+                colour = country_region), 
+            size = 5, fontface = "bold", hjust = 0)+
+  # Country label colours
+  scale_colour_manual(values = top_country_pal)+
+  # Y axis
+  scale_y_continuous(labels = scales::comma, breaks = scales::pretty_breaks(), 
+             expand = expansion(mult = c(0,.125), add = c(0, 2)))+
+  # X axis
+  scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+             date_labels = "%b", 
+             expand = expansion(mult = c(0,.125), add = c(0, 1.9)))+
+  # Plot labels
+  labs(y = "Cases", x = NULL,
+       title = "COVID around the world",
+       subtitle = str_c("Cumulative confirmed cases, by country (as of ", 
+                     stamp_date("Oct 1 1979")(today()), ")"), 
+       caption = source_caption(sources = jhu_source))+
+  theme_mark(base_size = 10, md=T)+
+  theme(legend.position = "none",
+        # hide the minor grid lines
+        panel.grid.minor = element_blank(),
+        # hide vertical major grid lines
+        panel.grid.major.x = element_blank(),
+        # change colour and thickness of horizontal grid lines
+        panel.grid.major.y = element_line(size = 1))
+
+# The ggsave function to save as a file
+# ggsave(filename = "Covid_country_timeline.png", device = "png", 
+#        height = 15, width = 25, 
+#        units = "cm", scale = 2.25)
+
+```
+
+
+
+```{r country-daily-cases, ref.label='country-daily-cases-code', echo = F, include=F}
+```
+
+
+
+```{r country-labels-100k, include=F, echo=F}
+# Country labels
+country_labels_per_100k = covid_country_level %>% 
+  # Select confirmed cases on the most recent date
+  filter(case_type == "confirmed", !is.na(population), date == max(date)) %>% 
+  mutate(cases_per_100k = 100000*(total_cases/population)) %>% 
+  # Take the top 5, ordered by daily cases => this is now slice_max()
+  slice_max(n = 5, cases_per_100k) %>% 
+  mutate(date =max(date) + days(2)) %>% # Add two days to the date for the label position
+  arrange(-cases_per_100k)
+```
+
+```{r country-daily-cases-per-100k-code, include=F, echo=F}
+
+covid_country_level %>% 
+  # Select only confirmed cases
+  filter(case_type == "confirmed", !is.na(population)) %>% 
+  mutate(cases_per_100k = 100000*(total_cases/population)) %>% 
+  # Start ggplot
+  ggplot(., aes(x = date, y = cases_per_100k, group = country_region, colour = country_region))+
+  # Line geom
+  geom_line(size = 1)+
+  # Highlight cases which are in our labelling dataframe
+  gghighlight(max(cases_per_100k) >= min(country_labels_per_100k$cases_per_100k), 
+              max_highlight = 5, 
+              unhighlighted_params = list(colour = my_col_pal[3], size = .7, alpha = .5), 
+              use_direct_label = F)+
+  # Country labels
+  geom_text_repel(data = country_labels_per_100k,
+            aes(x = date, y = cases_per_100k, label = country_region, colour = country_region), 
+            size = 5, fontface = "bold", hjust = 0, direction = "y", segment.alpha = 0)+
+  # Country label colours
+  scale_colour_manual(values = top_country_pal)+
+  # Y axis
+  scale_y_continuous(labels = scales::comma, breaks = scales::pretty_breaks(), 
+             expand = expansion(mult = c(0,.125), add = c(0, 2)))+
+  # X axis
+  scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+             date_labels = "%b", 
+             expand = expansion(mult = c(0,.125), add = c(0, 1.9)))+
+  # Plot labels
+  labs(y = "Confirmed Cases per 100,000", x = NULL, 
+       title = "COVID-19 Cumulative Confirmed Cases per 100,000 people, by Country", 
+       caption = source_caption(source = jhu_source))+
+  theme_mark(base_size = 10, md=T)+
+  theme(legend.position = "none",
+        # hide the minor grid lines
+        panel.grid.minor = element_blank(),
+        # hide vertical major grid lines
+        panel.grid.major.x = element_blank(),
+        # change colour and thickness of horizontal grid lines
+        panel.grid.major.y = element_line(size = 1))
+
+# The ggsave function to save as a file
+# ggsave(filename = "Covid_country_timeline.png", device = "png", 
+#        height = 15, width = 25, 
+#        units = "cm", scale = 2.25)
+```
+
+
+```{r country-daily-cases-per-100k, ref.label='country-daily-cases-per-100k-code', echo=F, eval=F}
+```
+
+
+
+
+```{r covid-ridges-prep, include=F, echo=F}
+covid_cases_by_day = covid_country_level %>% 
+  group_by(country_region) %>% 
+  # Keep only confirmed cases where we have a value for population
+  filter(case_type == "confirmed", !is.na(population),
+         max(total_cases) > 50000) %>% 
+  arrange(country_region, date) %>% 
+  # Identify date of first case in each country
+  mutate(first_case = nth(date, min(which(total_cases > 0))),
+         min_cases = nth(total_cases, min(which(total_cases > 0)))) %>% 
+  ungroup() %>% 
+  # Calculate the daily cases as a proportion of population
+  mutate(daily_cases_pct = daily_cases/population) %>% 
+  select(country_region, population, date, first_case, 
+         total_cases, daily_cases, daily_cases_pct, min_cases)
+
+covid_cases_by_day %>% 
+  filter(country_region == sample(country_region, 1)) %>% 
+  tail()
+```
+
+
+```{r, eval=F, echo=F}
+lobstr::ast(first_case <- nth(date, min(which(total_cases > 0))))
+```
+
+
+
+```{r covid-ridges-code, fig.height = 50, fig.width = 18, echo=F, eval=F}
+
+covid_cases_by_day %>% 
+  arrange(first_case, -min_cases, country_region, date) %>%
+  mutate(country_region = fct_inorder(country_region)) %>%
+  ggplot(., aes(x = date, y = daily_cases_pct, group = country_region))+
+  geom_area(alpha = .75, fill = viz_colours[1], colour = my_col_pal[3])+
+  labs(subtitle = "Daily COVID-19 cases *as % of population*", 
+       caption = source_caption(sources = jhu_source))+
+  scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+             date_labels = "%b", 
+             position = "top")+
+  facet_wrap(~country_region, 
+             ncol = 1, strip.position = "right", 
+             scales = "free_y", shrink=F)+
+  theme_mark(md=T, base_size = 12, plot_margin = margin(20,20,20,20))+
+  theme(legend.position = "none",
+        # hide the minor grid lines
+        panel.grid.minor = element_blank(),
+        # hide vertical major grid lines
+        panel.grid.major = element_blank(),
+        axis.title = element_blank(),
+        axis.title.y.left = element_blank(),
+        axis.title.y.right = element_blank(),
+        axis.title.x.top = element_blank(),
+        strip.text.y.right = element_text(angle = 0, vjust = 0.5, hjust = 0, 
+                                          size = 12*1.4, margin = margin(0,0,0,0)),
+        panel.spacing.y = unit(-.2, "lines"),
+        axis.line = element_blank(),
+        axis.text.y = element_blank())
+```
+
+
+```{r, eval=F, include=F}
+covid_policies = read_csv("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv")
+
+glimpse(covid_policies)
+
+school_closing_policies = covid_policies %>% 
+  select(CountryName:Date, `C1_School closing`, C1_Flag) %>% 
+  mutate(Date = ymd(Date))
+
+covid_cases_by_day %>% 
+  # I swear I'll clean up the country names so they all join later
+  inner_join(school_closing_policies, by = c("country_region" = "CountryName", "date" = "Date")) %>% 
+  arrange(first_case, -min_cases, country_region, date) %>%
+  mutate(country_region = fct_inorder(country_region))
+
+lockdowns = covid_policies %>% 
+      select(CountryName:`C8_International travel controls`, M1_Wildcard:ConfirmedDeaths) %>%
+      clean_names() %>% 
+      mutate(date = ymd(date),
+             lockdown_school_closing = (c1_school_closing > 1 & c1_flag != 0),
+             lockdown_workplace_closing = (c2_workplace_closing > 1 & c2_flag != 0),
+             lockdown_cancel_public_events = (c3_cancel_public_events > 1 & c3_flag != 0),
+             lockdown_restrictions_on_gatherings = (c4_restrictions_on_gatherings > 0 & c4_flag != 0),
+             lockdown_close_public_transport = (c5_close_public_transport > 0 & c5_flag != 0),
+             lockdown_stay_at_home_requirements = (c6_stay_at_home_requirements  > 1 & c6_flag != 0),
+             lockdown_restrictions_on_internal_movement = (c7_restrictions_on_internal_movement > 1 & c7_flag != 0),
+             lockdown_international_travel_controls = (c8_international_travel_controls > 1)) %>% 
+      pivot_longer(cols = starts_with("lockdown"), names_to = "lockdown_type", values_to = "lockdown_active", names_pattern = "lockdown_([a-z_]+)")
+
+coviz_axis = scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+                 date_labels = "%b", 
+                 position = "top")
+
+covid_cases_by_day %>% 
+    filter(country_region == "Ireland") %>% 
+    arrange(first_case, -min_cases, country_region, date) %>%
+    mutate(country_region = fct_inorder(country_region)) %>%
+    ggplot(., aes(x = date, y = daily_cases, group = country_region))+
+    geom_area(alpha = .75, fill = viz_colours[1], colour = my_col_pal[3])+
+    labs(title = "Ireland's COVID-19 cases and policy responses")+
+    coviz_axis+
+    scale_y_continuous(breaks = scales::pretty_breaks(), labels = scales::comma, position = "left")+
+    theme_mark(md=T, base_size = 11, plot_margin = margin(0,20,-5,20))+
+    theme(legend.position = "none",
+          # hide the minor grid lines
+          panel.grid.minor = element_blank(),
+          # hide vertical major grid lines
+          panel.grid.major.x = element_blank(),
+          axis.title = element_blank(),
+          axis.title.y.left = element_blank(),
+          axis.title.x.top = element_blank(),
+          strip.text.y.right = element_blank(),
+          panel.spacing.y = unit(-.2, "lines"),
+          axis.line = element_blank()) -> coviz_irl
+
+
+lockdown_viz = covid_cases_by_day %>% 
+  filter(country_region %in% c("Ireland")) %>% 
+  # I swear I'll clean up the country names so they all join later
+  inner_join(lockdowns, by = c("country_region" = "country_name", "date" = "date")) %>% 
+  arrange(first_case, -min_cases, country_region, date) %>%
+  mutate(country_region = fct_inorder(country_region),
+         lockdown_type = factor(str_to_title(str_replace_all(lockdown_type, "_", " ")),
+                                levels = c("School Closing", "Workplace Closing", 
+                                           "Cancel Public Events", "Restrictions On Gatherings", 
+                                           "Close Public Transport", "Stay At Home Requirements", 
+                                           "Restrictions On Internal Movement", "International Travel Controls"), 
+                                ordered = T),
+         lockdown_val = na_if(lockdown_active*as.numeric(lockdown_type)/2, 0)) %>% 
+  ggplot(., aes(x = date, y = lockdown_val, colour = lockdown_type, group = lockdown_type))+
+  geom_line(alpha = .75, size = 2)+
+  labs(caption = source_caption(sources = c(jhu_source, oxford_source)))+
+  scale_colour_manual(values = viz_colours, na.value = my_col_pal[1], 
+                      name = NULL)+
+  coviz_axis+
+  facet_wrap(~lockdown_type, 
+             ncol = 1, strip.position = "right", 
+             scales = "free_y", shrink=F)+
+  theme_mark(md=T, base_size = 12, plot_margin = margin(0,20,-5,20))+
+  theme(legend.position = "none",
+        # hide the minor grid lines
+        panel.grid.minor = element_blank(),
+        # hide vertical major grid lines
+        panel.grid.major = element_blank(),
+        axis.title = element_blank(),
+        axis.title.y.left = element_blank(),
+        axis.title.y.right = element_blank(),
+        axis.title.x.top = element_blank(),
+        strip.text.y.left = element_text(angle = 0, vjust = 0.5, hjust = 1, 
+                                          margin = margin(0,0,0,0)),
+        strip.text.y.right = element_text(angle = 0, vjust = 0.5, hjust = 0, 
+                                          margin = margin(0,0,0,0)),
+        axis.text.x = element_blank(),
+        axis.line = element_blank(),
+        axis.text.y = element_blank())
+
+coviz_irl / lockdown_viz + 
+  plot_layout(design = c(
+    area(t = 1, l = 1, b = 5, r = 4),
+    area(t = 6, l = 1, b = 7, r = 4)
+))+
+  plot_annotation(theme = theme_mark(plot_margin = margin(10, 10, 0, 10)))
+
+
+```
+
+
+```{r callout, echo=F}
+htmltools::HTML('
+{{< callout>}}
+                <div class="row">
+                  <div class="col-lg-1 col-md-1 col-sm-1">
+                    <span class="material-icons" style="font-size:2.75rem">announcement</span>
+                  </div>
+                  <div class="col-lg-10 col-md-10 col-sm-11">
+                    <p style="margin-bottom:0;">The Y-axis is relative in this plot. This gives us an interesting view of the point(s) in time when COVID cases surged within each country, but we <strong><em>cannot</em> use it to compare the magnitude of the surge between countries</strong>.</p>
+                  </div>
+                </div>
+{{</callout>}}
+')
+# blogdown::shortcode('callout', 'This means that we cannot make comparisons between countries, but we can see how COVID spread within a country.')
+```
+
+```{r eval=F, echo=F}
+htmltools::HTML('
+{{< callout2 icon="announcement" text={{<rawhtml>}}The Y-axis is relative in this plot. This gives us an interesting view of the point(s) in time when COVID cases surged within each country, but we <strong><em>cannot</em> use it to compare the magnitude of the surge between countries</strong>.{{</rawhtml>}}>}}
+')
+# blogdown::shortcode('callout2', icon = 'announcement', text = 'The Y-axis is relative in this plot. This gives us an interesting view of COVID\'s spread within a country, but we <strong><em>cannot</em> make strong comparisons between countries</strong>.')
+```
+
+
+</div>
+
+
+```{css, echo=FALSE}
+.full_screen {
+  position: relative;
+  left: 7.5vw;
+}
+```
+
+
+<div class="full_screen">
+
+```{r covid-ridges, ref.label='covid-ridges-code', fig.height = 30, fig.width = 15, echo=F, class.output="full_screen", cache=T}
+
+```
+</div>
+
+<div class="project-container">
+
+
+<details class="code-details"><summary class="code-summary">Code</summary>
+
+To prepare the data, we need to calculate the daily cases as a percentage of total population.
+I also wanted to order the data by the onset of COVID cases in each country in order to perhaps get a visual representation of COVID's international spread.
+
+There are limitations to this however, specifically considerations that confirmed cases may be underestimated at the onset of the virus due to insufficient testing capacity, public confusion, or deliberate data tampering by government organizations.
+
+```{r ref.label='covid-ridges-prep'}
+```
+
+Identifying the date of the first case for each country was a little tricky.
+I ended up using `which()` to get a list of vector indices where `total_cases` **was greater than 0**, taking the `min()` of that to get the position of the first date which matched this criteria, and finally used `nth()` to select the value  of `date` at the specified index.
+
+Or in `{lobstr}` form, it would be:
+
+```{r}
+lobstr::ast(first_case <- nth(date, min(which(total_cases > 0))))
+```
+
+
+```{r ref.label='covid-ridges-code', fig.height = 50, fig.width = 18, echo=T, eval=F}
+```
+
+What would be really interesting is to denote the times lockdowns came in effect too.
+This is in the works at the moment, potentially utilizing [Oxford Blavatnik School's Coronavirus Government Response Tracker](https://www.bsg.ox.ac.uk/research/research-projects/coronavirus-government-response-tracker#data).
+
+</details>
+
+Trying to find unique (and **useful**) methods of data visualization is difficult, but it's also a lot of fun.
+
+In this example, it is important to understand that the y-axis is *free*, which means that for each country, we are looking at the proportion of the country's population reporting cases of coronavirus only in relation to that country.
+This illustrates **the point(s) in time when COVID cases surged within a particular country**.
+
+Let's look at an example to make sure this makes sense.
+Below is the very small subset of countries which I've lived in - Ireland and the United States.
+The US, with its population of 300+ million people, has 50-100 times the number of cases reported as Ireland does.
+However, Ireland had quite a spike in the last few weeks of 2020 and was experiencing more cases in proportion to its population (`r scales::percent(max(covid_cases_by_day[covid_cases_by_day$country_region == "Ireland", "daily_cases_pct"]), accuracy=.001)`) than the US (`r scales::percent(max(covid_cases_by_day[covid_cases_by_day$country_region == "US", "daily_cases_pct"], na.rm=T), accuracy=.001)`).
+
+```{r covid-us-irl, echo=F, fig.height = 8, fig.width = 12}
+covid_cases_by_day %>% 
+  # Select Ireland and US only
+  filter(country_region %in% c("Ireland", "US")) %>% 
+  # Order the countries by the date of the first case and the minimum number of cases
+  arrange(first_case, -min_cases, country_region, date) %>%
+  mutate(country_region = fct_inorder(country_region)) %>% 
+  # Calculate each country's max daily case %
+  group_by(country_region, quarter(date)) %>% 
+  mutate(max_pct = if_else(daily_cases_pct == max(daily_cases_pct, na.rm=T), 
+                             scales::percent(daily_cases_pct, accuracy = .001), 
+                             NA_character_)) %>% 
+  # Plotting
+  ggplot(., aes(x = date, y = daily_cases, group = population))+
+  # Area
+  geom_area(alpha = .75, fill = viz_colours[1], colour = my_col_pal[3])+
+  # % labels
+  geom_text_repel(aes(label = max_pct),
+            colour = my_col_pal[2], min.segment.length = unit(1, "mm"), 
+            force = 25, max.iter = 10000,
+            size = 4, fontface = "bold", nudge_y = 40)+
+  # Plot labels
+  labs(title = "Daily COVID-19 cases in Ireland and the US", 
+       subtitle = "Comparing absolute and proportional measures",
+       caption = jhu_source_caption)+
+  # Axes
+  scale_y_continuous(labels = scales::comma)+
+  scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+             date_labels = "%b", 
+             position = "top")+
+  # Facets
+  facet_wrap(~country_region, 
+             ncol = 1, strip.position = "right", 
+             scales = "free_y", shrink=F)+
+  # Theming
+  theme_mark(md=T, base_size = 12, plot_margin = margin(20,20,20,20))+
+  theme(legend.position = "none",
+        # hide the minor grid lines
+        panel.grid.minor = element_blank(),
+        # hide vertical major grid lines
+        panel.grid.major = element_blank(),
+        axis.title = element_blank(),
+        axis.title.y.left = element_blank(),
+        axis.title.y.right = element_blank(),
+        axis.title.x.top = element_blank(),
+        strip.text.y.right = element_text(angle = 0, vjust = 0.5, hjust = 0, 
+                                          size = 12*1.4, margin = margin(0,0,0,0)),
+        panel.spacing.y = unit(2, "lines"),
+        axis.line = element_blank())
+```
+```{r, ref.label="covid-us-irl", echo=T, eval=F}
+```
+
+</details>
+
+```{r, echo=F, results="asis"}
+footnote_dropdown(before = "COVID-19 (Coronavirus) is not the first global pandemic in my lifetime but it is the first to directly affect my life on a daily basis. On the long list of unique characteristics surrounding a pandemic in the modern era is the capacity for— and speed of data collection.",
+                  footnote_content = "[Data production has been **roughly doubling every 3 years** for at least the last 20 years](https://www.economist.com/special-report/2020/02/20/a-deluge-of-data-is-giving-rise-to-a-new-economy) with 50 [*zettabytes*](https://en.wikipedia.org/wiki/Zettabyte#:~:text=A%20zettabyte%20is%20one%20sextillion,bytes%20(approximately%201.181%20ZB)) being produced in 2020.",
+                  after = "Naturally, having access to real-time information on cases, deaths, and testing is indispensible for policymakers trying to identify their best response to the crisis.")
+```
+
+# About the data
+
+```{r, echo=F, results="asis"}
+footnote_dropdown(before = "The team at the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University has been tracking and compiling a myriad of primary and secondary public health data sources (e.g. World Health Organization, US & EU CDC organizations).",
+footnote_content = "Dong E, Du H, Gardner L., *An interactive web-based dashboard to track COVID-19 in real time.* Lancet Inf Dis. 20(5):533-534. doi: 10.1016/S1473-3099(20)30120-1. https://github.com/CSSEGISandData/COVID-19/", 
+after = "Below is a simple exploration of this data which will update daily. I look at which countries have the most cases in total, the highest number deaths, and I explore how the picture changes when measuring as a proportion of population. For population information, we will be using the [World Bank's country-level population data for 2019](https://data.worldbank.org/indicator/SP.POP.TOTL). You can view the code for each chart as we go along.")
+```
+
+
+
+<details><summary>Collecting the data</summary>
+
+Because CSSE is hosting the data directly on Github, all we need is the URLs to the files.
+The time-series data is prepared in separate .csv files for COVID data based on whether the numbers are referring to **confirmed cases**, **deaths**, or **recoveries**.  
+
+
+```{r ref.label='covid-data', message = F}
+```
+
+We can read each file directly from their URLs now. 
+This is only the first 10 columns to save space. 
+There are actually **`r dim(read_csv(case_urls["confirmed"]))[2]`** columns in total.
+
+```{r ref.label='read-one-file', echo=T, eval=F, message=F}
+```
+
+```{r ref.label='read-one-file-tbl', echo=F, eval=T, message=F}
+```
+
+Using [purrr's `imap_dfr` function](https://purrr.tidyverse.org/reference/imap.html), we can combine all three files into a dataframe. 
+With a named vector, imap maps over the value (`.x`) and the name (`.y`), so we can assign the case types (i.e. the vector's names) using the `.id` argument.
+
+```{r ref.label='read-in-data', message=F}
+```
+
+Currently the COVID case data has each day's cases in its own column e.g. `02/22/20`.
+Let's pivot the data to get the dates all in one column (and convert them from character to dates) so we can use `date` as the X-axis for plotting.
+You'll notice I also use the `clean_names()` function from the `{janitor}` package.
+This converts all the column names to a nice clean format.
+
+```{r ref.label='pivot-data'}
+```
+
+</details>
+
+<details><summary>Exploring the data</summary>
+
+
+Okay so we have three important metrics of Coronavirus in this data:
+
+1. How much we know we have of it
+2. For those who survive, how long it takes for them to recover
+3. How deadly it is
+
+While there may be many dimensions over which these metrics vary, in this dataset we have countries and time.
+There are a few countries also which offer regional information:
+
+```{r ref.label='countries-with-region-info'}
+```
+
+We also have the latitude and longitude which will come in handy if we want to go wild with maps at the end, it could be good.
+But in the meantime, how many countries do we have overall? 
+
+```{r ref.label= 'country-count'}
+```
+
+That's most of them! But what does one country's timeline look like in the data? Well I am a biased observer here and I'm curious about how Ireland looks. Ireland went into a pretty severe lockdown early on, but seems like the cases starting ticking up over Summer as *lockdown-fatigue* built up (and the pubs re-opened). This is at least how I interpreted the situation, hearing about it from friends and family. 
+
+What does it look like in the data?
+
+```{r ref.label='ireland-cases'}
+```
+
+It looks like Ireland's first recorded case was on February 29th, but let's see this on a graph.
+
+```{r ref.label='ireland-case-types'}
+```
+
+So it looks like I was wrong - cases started rising in April and leveled off during Summer. 
+Unfortunately it looks like cases are on the rise again in September and October.
+Presumably Ireland was not reporting recovered cases until late April (seems unlikely that 9,000 people all recovered on the same day).
+While both `confirmed` and `deaths` values are approximations, it looks like `recovered` cases are a much rougher approximation overall. [FIND OUT HOW RECOVERED CASES ARE TRACKED]
+Thankfully, deaths have been consistently low throughout the entire pandemic.
+
+It might also be useful to have a measure of how many new cases occur each day. 
+That is calculated here using [dplyr's `lag` function](https://dplyr.tidyverse.org/reference/lead-lag.html).
+
+
+```{r ref.label='calc-new-cases'}
+```
+
+In order to compare results against population, I used the [World Bank's country-level population data for 2019](https://data.worldbank.org/indicator/SP.POP.TOTL). But before we join the data, we will need to **change some of the country names to align with the country names used in the JHU data**.
+
+```{r ref.label='covid-data-clean', message = F}
+```
+
+Now we aggregate daily cases by `country_region`, `date`, and `case_type`.
+
+```{r ref.label='covid-country-level'}
+```
+
+How many cases have we seen worldwide?
+For this, we will need to aggregate again by `date` and `case_type`.
+
+```{r ref.label='aggregate-to-global'}
+```
+
+Now that we have the global cases for each case type and date, we can look at how cases have moved over time.
+First specify the labels we want to use.
+In this case I want to **label the case type at the final data point for each case type** - *Confirmed*, *Deaths*, and *Recovered*.
+
+```{r ref.label='create-labels'}
+```
+
+```{r ref.label='global-daily-cases-code', echo=T, eval=F}
+```
+
+</details>
+
+</div>
+<div>
+
+```{r ref.label='global-daily-cases-code', echo=F, eval=T}
+```
+
+</div>
+
+<div class="project-container" style="justify-content: center;">
+
+```{r, echo=F, results="asis"}
+footnote_dropdown(before = "COVID-19 (Coronavirus) is not the first global pandemic in my lifetime but it is the first to directly affect my life on a daily basis. On the long list of unique characteristics surrounding a pandemic in the modern era is the capacity for— and speed of data collection.",
+                  footnote_content = "[Data production has been **roughly doubling every 3 years** for at least the last 20 years](https://www.economist.com/special-report/2020/02/20/a-deluge-of-data-is-giving-rise-to-a-new-economy) with 50 [*zettabytes*](https://en.wikipedia.org/wiki/Zettabyte#:~:text=A%20zettabyte%20is%20one%20sextillion,bytes%20(approximately%201.181%20ZB)) being produced in 2020.",
+                  after = "Naturally, having access to real-time information on cases, deaths, and testing is indispensible for policymakers trying to identify their best response to the crisis.")
+```
+
+
+```{r, echo=F, results="asis"}
+footnote_dropdown(before = "The team at the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University has been tracking and compiling a myriad of primary and secondary public health data sources (e.g. World Health Organization, US & EU CDC organizations).",
+footnote_content = "Dong E, Du H, Gardner L., *An interactive web-based dashboard to track COVID-19 in real time.* Lancet Inf Dis. 20(5):533-534. doi: 10.1016/S1473-3099(20)30120-1. https://github.com/CSSEGISandData/COVID-19/", 
+after = "Below is a simple exploration of this data which will update daily. I look at which countries have the most cases in total, the highest number deaths, and I explore how the picture changes when measuring as a proportion of population. For population information, we will be using the [World Bank's country-level population data for 2019](https://data.worldbank.org/indicator/SP.POP.TOTL). You can view the code for each chart as we go along.")
+```
+
+
+## Which countries have the most cases?
+
+<details><summary>Code</summary>
+
+Which countries have the most confirmed cases? 
+Using the package `{gghighlight}`, we can specifically highlight these countries.
+Similar to the plot above, we first want to specify the labels we want to use.
+
+```{r ref.label='country-labels'}
+```
+
+Now we filter to only confirmed cases and start plotting.
+
+```{r ref.label='country-daily-cases-code', eval=F, echo=T}
+```
+
+</details>
+
+```{r ref.label='country-daily-cases-code', echo = F, include=T}
+```
+
+## Relative to population size, which countries have the most cases?
+
+There has been a lot of discussion about *the numbers* in regards to Coronavirus and how to measure the state of the pandemic. 
+
+It is important to understand the implications of approaching the question from that angle.
+
+For this plot, we are looking at cases per 100,000 people.
+This reason to do this is to normalize for population size. 
+For example, it's hardly surprising that India has a high number of COVID cases with a population of over 1 billion.
+However we can also expect that when we normalize for population, countries with smaller, denser populations will rank much higher.
+
+<details><summary>Code</summary>
+
+First we create the country labels by selecting **confirmed** cases and filtering to rows which have a value for population and the most recent date.
+We filter on date so that we put the labels at the very end of the X-axis.
+
+After this we calculate the proportion of cases in the population and multiply that proportion by 100,000 to get the **cases per 100,000**.
+
+
+```{r ref.label='country-labels-100k'}
+```
+
+```{r ref.label='country-daily-cases-per-100k-code', eval=F, echo=T}
+```
+
+</details>
+
+```{r country-daily-cases-per-100k, ref.label='country-daily-cases-per-100k-code', echo=F}
+```
+
+
+
+
