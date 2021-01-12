@@ -1,16 +1,56 @@
-my_col_pal = str_c("#", c("f0fafa","92898A","050F0F","236C6C","E9724C", "444FC5", "FFBC42", "7DC95E", "9E2B25"))
+my_col_pal = str_c("#", 
+                   c("f0fafa", # background
+                     "051414", # text
+                     "474d4d", # Axis line colour
+                     "C2D6D4", # Grid line colour
+                     "236c6c", # skobeloff
+                     "e9724c", # burnt sienna
+                     "6ca8a8", # cadet blue
+                     "69b44b", # green
+                     "941c2f", # crimson
+                     "b35757", # lighter crimson
+                     "072e25", # dark green
+                     "6d435a"  # eggplant
+                   )) 
 
-theme_mark = function(title_family = "Inter",
-                      text_family = "Inter",
-                      base_size = 13, 
-                      plot_margin = margin(20,20,20,20),
-                      plots_pane = FALSE,
-                      md = FALSE,
-                      colour_pal = str_c("#", c("f0fafa","92898A","050F0F","236C6C","E9724C", "444FC5", "FFBC42", "7DC95E", "9E2B25"))) {
+options(reactable.theme = reactableTheme(
+  color = my_col_pal[2],
+  backgroundColor = my_col_pal[1],
+  borderColor = my_col_pal[3],
+  stripedColor = my_col_pal[4],
+  highlightColor = my_col_pal[7],
+  style = list(
+    fontFamily = "Roboto, sans-serif",
+    fontSize = "0.75rem"
+  )
+)
+)
+
+source_caption = function(sources){
+  if(missing(sources)){
+    stop("Need to provide a vector of sources to the sources argument")
+  }
+  
+  str_c(
+    "**Source", if(length(sources) > 1){"s"}, "**: ",
+    "<span style='line-height:1.25;'>", str_c(sources, collapse = "<br>"), "</span>",
+    "<br><br>",
+    "<span style='font-size:12px;color:", viz_colours[7], 
+    "'>Visualized by @MokeEire</span>"
+  )
+}
+theme_mark = function(title_family = "Roboto",
+                        text_family = "Merriweather Sans",
+                        base_size = 13, 
+                        plot_margin = margin(20,20,20,20),
+                        plots_pane = FALSE,
+                        md = FALSE,
+                        colour_pal = my_col_pal) {
   
   bg_colour = colour_pal[1]
-  line_colour = colour_pal[2]
-  text_colour = colour_pal[3]
+  text_colour = colour_pal[2]
+  line_colour = colour_pal[3]
+  grid_colour = colour_pal[4]
   
   if (plots_pane == FALSE & md == FALSE) {
     ggplot2::theme_minimal() +
