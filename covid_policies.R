@@ -8,6 +8,7 @@ library(ggtext)
 library(ggrepel)
 library(gghighlight)
 library(reactable)
+library(patchwork)
 
 here("theme_mark.R") %>% 
   walk(source)
