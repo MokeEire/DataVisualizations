@@ -48,8 +48,83 @@ case_urls = str_c(folder_url,
   # Setting names so we can map over each file later
   set_names(files)
 
+covid_data = imap_dfr(case_urls, 
+                      ~read_csv(file = .x), 
+                      .id = "case_type") %>% 
+  select(`Province/State`, `Country/Region`, case_type, everything())
+
+head(covid_data)%>% 
+  select(1:10)
+
+
+
+
+
+
+
 
 # World Population Data ---------------------------------------------------
+
+# UN Population data - https://population.un.org/wpp/Download/Standard/CSV/
+un_pop = read_csv("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
+
+un_pop_df = un_pop %>% 
+  # Filter to 2020, use the Medium Variant and remove Aggregated regions
+  filter(Time == 2020, Variant == "Medium", LocID <= 900) %>% 
+  select(Location, LocID, PopMale:PopDensity) %>% 
+  clean_names()
+
+
+
+# Countries in Johns Hopkins data but not in UN
+jh_not_un = covid_data %>% 
+  distinct(`Country/Region`) %>% 
+  anti_join(un_pop_df, by = c("Country/Region" = "location"))
+
+# Countries in UN data but not in Johns Hopkins
+un_not_jh = un_pop_df %>% 
+  distinct(location) %>% 
+  anti_join(covid_data, by = c("location" = "Country/Region"))
+
+bind_cols(
+  jh_not_un %>% 
+    add_row(`Country/Region` = rep(NA_character_,
+                                   (nrow(un_not_jh)-nrow(jh_not_un)))),
+  un_not_jh
+) %>% View()
+
+un_pop_clean = un_pop_df %>% 
+  mutate(location = str_replace_all(location, c("Bolivia \\(Plurinational State of\\)" = "Bolivia",
+                                                "Iran \\(Islamic Republic of\\)" = "Iran",
+                                                "China, Taiwan Province of China" = "Taiwan",
+                                                "Viet Nam" = "Vietnam",
+                                                "Republic of Korea" = "South Korea",
+                                                "Republic of Moldova" = "Moldova",
+                                                "United States of America" = "United States",
+                                                "Venezuela \\(Bolivarian Republic of\\)" = "Venezuela",
+                                                "Democratic Republic of the Congo" = "Congo, Dem. Rep.",
+                                                "^Congo$" = "Congo, Rep.",
+                                                "United Republic of Tanzania" = "Tanzania",
+                                                "Syrian Arab Republic" = "Syria",
+                                                "Russian Federation" = "Russia",
+                                                "Lao People's Democratic Republic" = "Laos",
+                                                "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
+                                                "Saint Kitts and Nevis" = "St. Kitts and Nevis",
+                                                "Brunei Darussalam" = "Brunei")))
+
+# Clean up country names, remove cruise ships
+covid_data_clean = covid_data %>% 
+  mutate(`Country/Region` = str_replace_all(`Country/Region`, c("Cote d'Ivoire" = "Côte d'Ivoire",
+                                                                "Korea, South" = "South Korea",
+                                                                "Burma" = "Myanmar",
+                                                                "US" = "United States",
+                                                                "Congo \\(Brazzaville\\)" = "Congo, Rep.",
+                                                                "Congo \\(Kinshasa\\)" = "Congo, Dem. Rep.",
+                                                                "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
+                                                                "Saint Kitts and Nevis" = "St. Kitts and Nevis",
+                                                                "Taiwan\\*" = "Taiwan"))) %>% 
+  # Remove cruise ships
+  filter(!(`Country/Region` %in% c("Diamond Princess", "MS Zaandam")))
 
 # Set filename
 # Thanks to: https://blogdown-demo.rbind.io/2018/02/27/r-file-paths/
