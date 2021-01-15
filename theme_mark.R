@@ -133,13 +133,31 @@ theme_mark = function(title_family = "Cabin Condensed",
                                               hjust = 1,
                                               face = "italic",
                                               margin = margin(t = 10, b = 10, l = 10, r = 10)),
-        axis.title.y.left = ggtext::element_markdown(margin = margin(r = 10, l = 10)),
-        axis.title.y.right = ggtext::element_markdown(hjust = 0, margin = margin(l = 15)),
+        axis.title.y.left = ggtext::element_markdown(size = base_size * 1.6,
+                                                     hjust = 1,
+                                                     face = "italic",
+                                                     margin = margin(r = 10, l = 10)),
+        axis.title.y.right = ggtext::element_markdown(size = base_size * 1.6,
+                                                      hjust = 0,
+                                                      face = "italic",
+                                                      margin = margin(l = 15)),
         axis.line = element_line(colour = line_colour),
         
         # Legend
-        legend.title = ggtext::element_markdown(size = base_size * 1.3),
-        legend.text = ggtext::element_markdown(size = base_size * 1.1)
+        legend.title = ggtext::element_markdown(size = base_size * 1.2),
+        legend.text = ggtext::element_markdown(size = base_size * .9),
+        
+        # Facets
+        strip.text.y.left = element_text(size = base_size * 1.1, 
+                                         angle = 0, 
+                                         vjust = 0.5, 
+                                         hjust = 1),
+        strip.placement = "outside",
+        strip.text.y.right = element_text(size = base_size * 1.1, 
+                                          angle = 0, 
+                                          vjust = 0.5, 
+                                          hjust = 0),
+        
       )
   } else if (plots_pane == TRUE & md == TRUE) {
     ggplot2::theme_minimal(base_size = base_size) +
