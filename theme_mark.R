@@ -180,7 +180,7 @@ theme_mark = function(title_family = "Cabin Condensed",
         plot.margin = plot_margin,
         plot.caption.position = "plot", 
         plot.caption = ggtext::element_markdown(hjust = 0, 
-                                                colour = text_colour),
+                                                colour = line_colour),
         
         # Background
         plot.background = element_rect(fill = bg_colour,
@@ -194,11 +194,13 @@ theme_mark = function(title_family = "Cabin Condensed",
                                               face = "italic"),
         axis.title.y.left = ggtext::element_markdown(margin = margin(r = 15), 
                                                      colour = text_colour, 
-                                                     family = text_family),
+                                                     family = text_family,
+                                                     face = "italic"),
         axis.title.y.right = ggtext::element_markdown(hjust = 0, 
                                                       margin = margin(l = 15), 
                                                       colour = text_colour, 
-                                                      family = text_family),
+                                                      family = text_family,
+                                                      face = "italic"),
         axis.text = ggtext::element_markdown(colour = text_colour,
                                              family = text_family),
         axis.line = element_line(colour = line_colour),
@@ -226,7 +228,8 @@ theme_mark = function(title_family = "Cabin Condensed",
         # Plot margin and caption
         plot.margin = plot_margin,
         plot.caption.position = "plot", 
-        plot.caption = element_text(hjust = 0),
+        plot.caption = element_text(hjust = 0, 
+                                    colour = line_colour),
         
         # Background
         plot.background = element_rect(fill = bg_colour,
@@ -235,60 +238,13 @@ theme_mark = function(title_family = "Cabin Condensed",
         # Axes
         axis.title = element_text(hjust = 1,
                                   face = "italic"),
-        axis.title.y.left = element_text(margin = margin(r = 15)),
-        axis.title.y.right = element_text(hjust = 0, margin = margin(l = 15)),
+        axis.title.y.left = element_text(hjust = 1,
+                                         face = "italic",
+                                         margin = margin(r = 15)),
+        axis.title.y.right = element_text(hjust = 0, 
+                                          face = "italic",
+                                          margin = margin(l = 15)),
         axis.line = element_line(colour = line_colour)
       )
   }
-}
-
-
-min_wage_map = function(sf_data, map_year, fed_df){
-  sf_data = filter(sf_data, year == map_year) %>% 
-    mutate(min_wage_diff = min_wage - fed_min_wage)
-  # non_repelled_data = filter(sf_data, is.na(repelled), min_wage_level != "Same", year == map_year)
-  # repelled_data = filter(sf_data, repelled, min_wage_level != "Same", year == map_year)
-  
-  fed_mw = fed_df %>% filter(year == map_year) %>% pull(fed_min_wage)
-
-  p = ggplot(sf_data, aes(fill = min_wage_diff, group = year)) +#min_wage_level, group = year)) +
-    # Shapefile
-    geom_sf(colour = my_col_pal[2]) +
-    # State min_wage labels
-    # geom_sf_text(data = non_repelled_data, 
-    #              aes(label = scales::dollar(min_wage), group = year),
-    #              size = 3.5,
-    #              colour = my_col_pal[3],
-    #              nudge_x = pull(non_repelled_data, x_nudge),
-    #              nudge_y = pull(non_repelled_data, y_nudge),
-    #              family = "Inter")+
-    # Repel the smooshed (smushed?) up eastern states
-    # https://yutani.rbind.io/post/geom-sf-text-and-geom-sf-label-are-coming/
-    # geom_text_repel(data = repelled_data,
-    #                 aes(label = scales::dollar(min_wage), 
-    #                     geometry = geometry, group = year),
-    #                 family = "Inter",
-    #                 size = 3.5,
-    #                 nudge_x = pull(repelled_data, x_nudge),
-    #                 nudge_y = pull(repelled_data, y_nudge),
-    #                 max.iter = 100, force = .5,seed = 1,
-    #                 segment.colour = my_col_pal[3],
-    #                 segment.alpha = .8,
-    #                 colour = my_col_pal[3],
-    #                 stat = "sf_coordinates")+
-    coord_sf(crs = us_longlat_proj)+
-    # scale_colour_identity()+
-    labs(title = str_c("State vs. Federal Minimum Wage, ", map_year),
-         subtitle = str_c("Difference ± between State and Federal Min. Wage (", scales::dollar(fed_mw), ")"))+
-    # scale_fill_manual(name = NULL, values = c("Above" = my_col_pal[9], "Same" = my_col_pal[7], "Below" = my_col_pal[4]))+
-    scale_fill_gradient2(low = my_col_pal[4], mid = my_col_pal[1], high = my_col_pal[9], 
-                         labels = scales::dollar, name = NULL)+
-    theme_mark(plots_pane = F)+
-    theme(axis.text = element_blank(),
-          axis.title = element_blank(),
-          axis.title.y.left = element_blank(),
-          axis.line = element_blank())
-  
-  ggsave(p, filename = here("min_wage", str_c("min_wage_", map_year, ".png")), 
-         device = "png", width = 12, height = 9, units = "cm", scale = 2)
 }
