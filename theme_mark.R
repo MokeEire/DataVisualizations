@@ -39,8 +39,9 @@ source_caption = function(sources){
     "'>Visualized by @MokeEire</span>"
   )
 }
-theme_mark = function(title_family = "Roboto",
-                        text_family = "Merriweather Sans",
+theme_mark = function(title_family = "Cabin Condensed",
+                      subtitle_family = "Fira Sans Extra Condensed",
+                        text_family = "Noto Sans",
                         base_size = 13, 
                         plot_margin = margin(20,20,20,20),
                         plots_pane = FALSE,
