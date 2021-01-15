@@ -161,12 +161,133 @@ world_pop = read_csv(world_pop_file) %>%
   ))
 
 
+
+
+
+
+
 # COVID Policy Data -------------------------------------------------------
 
-covid_policies = read_csv("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv")
+
+covid_policies = read_csv("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv", guess_max = 50000) %>%
+  clean_names() %>% 
+  filter(jurisdiction == "NAT_TOTAL") %>% 
+  mutate(date = ymd(date),
+         across(matches("c[0-9]_flag"), ~factor(., levels = c(0, 1), labels = c("Targeted", "National"))))
 
 glimpse(covid_policies)
 
+policy_dict = c("c1" = "School closing",
+                "c2" = "Workplace closing",
+                "c3" = "Cancel public events",
+                "c4" = "Restrictions on gatherings",
+                "c5" = "Close public transport",
+                "c6" = "Stay at home requirements",
+                "c7" = "Restrictions on internal movement",
+                "c8" = "International travel controls")
+
+lockdowns = covid_policies %>% 
+  select(country_name, date, c1_school_closing:c8_international_travel_controls) %>%
+  clean_names() %>% 
+  # rename policy vars
+  rename_with(.cols = matches("c[0-9]_[^(flag)]"), .fn = ~str_replace_all(., "(?<=c[0-9]_).+", "response")) %>% 
+  mutate(# Create boolean values for whether a lockdown was enacted
+         ################## IMPORTANT:  ############################
+         # I specify a policy as a lockdown when the policy is required rather than recommended
+         c1_lockdown = (c1_response > 1),
+         c2_lockdown = (c2_response > 1),
+         c3_lockdown = (c3_response > 1),
+         c4_lockdown = (c4_response > 0),
+         c5_lockdown = (c5_response > 0),
+         c6_lockdown = (c6_response  > 1),
+         c7_lockdown = (c7_response > 1),
+         c8_lockdown = (c8_response > 1)) %>% 
+  # pivot to policy, response, flag
+  pivot_longer(!c(country_name, date), names_to = c("policy", ".value"), names_sep = "_") %>% 
+  # provide policy labels
+  mutate(policy = str_replace_all(policy, policy_dict)) %>% 
+  # Add factor labels to flag and make policy a factor
+  mutate(policy = factor(policy,
+                         levels = c("School closing", 
+                                    "Workplace closing", 
+                                    "Cancel public events",
+                                    "Restrictions on gatherings", 
+                                    "Close public transport", 
+                                    "Stay at home requirements", 
+                                    "Restrictions on internal movement",
+                                    "International travel controls"), 
+                         ordered = T),
+         lockdown_val = na_if(lockdown*as.numeric(policy), 0))
+
+covid_policies %>% 
+  select(CountryName:`C8_International travel controls`, M1_Wildcard:ConfirmedDeaths) %>%
+  clean_names() %>% 
+  mutate(country_name = if_else(country_name == "United States", "US", country_name),
+         date = ymd(date),
+         # Lockdown booleans
+         lockdown_school_closing = (c1_school_closing > 1 & c1_flag == 1),
+         lockdown_workplace_closing = (c2_workplace_closing > 1 & c2_flag == 1),
+         lockdown_cancel_public_events = (c3_cancel_public_events > 1 & c3_flag == 1),
+         lockdown_restrictions_on_gatherings = (c4_restrictions_on_gatherings > 0 & c4_flag == 1),
+         lockdown_close_public_transport = (c5_close_public_transport > 0 & c5_flag == 1),
+         lockdown_stay_at_home_requirements = (c6_stay_at_home_requirements  > 1 & c6_flag == 1),
+         lockdown_restrictions_on_internal_movement = (c7_restrictions_on_internal_movement > 1 & c7_flag == 1),
+         lockdown_international_travel_controls = (c8_international_travel_controls > 1)) %>% 
+  pivot_longer(cols = starts_with("lockdown"), names_to = "lockdown_type", values_to = "lockdown_active", names_pattern = "lockdown_([a-z_]+)") %>% 
+  select(country_name, date, contains("lockdown"))
+
+# Add response labels
+# `C1_School closing` = factor(`C1_School closing`, levels = 0:3, labels = c("no measures", 
+#                                                                            "recommend closing or all schools open with alterations resulting in significant differences compared to non-Covid-19 operations", 
+#                                                                            "require closing (only some levels or categories, eg just high school, or just public schools)", 
+#                                                                            "require closing all levels"),
+#                              ordered = T),
+# `C2_Workplace closing` = factor(`C2_Workplace closing`, levels = 0:3, labels = c("no measures",
+#                                                                                  "recommend closing (or recommend work from home)",
+#                                                                                  "require closing (or work from home) for some sectors or categories of workers",
+#                                                                                  "require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors)"),
+#                                 ordered=T),
+# `C3_Cancel public events` = factor(`C3_Cancel public events`, 
+#                                    levels = 0:2, 
+#                                    labels = c("no measures",
+#                                               "recommend cancelling",
+#                                               "require cancelling"),
+#                                    ordered = T), 
+# `C4_Restrictions on gatherings` = factor(`C4_Restrictions on gatherings`, 
+#                                          levels = 0:4, 
+#                                          labels = c("no restrictions",
+#                                                     "restrictions on very large gatherings (the limit is above 1000 people)",
+#                                                     "restrictions on gatherings between 101-1000 people",
+#                                                     "restrictions on gatherings between 11-100 people",
+#                                                     "restrictions on gatherings of 10 people or less"),
+#                                          ordered = T), 
+# `C5_Close public transport` = factor(`C5_Close public transport`, 
+#                                      levels = 0:2, 
+#                                      labels = c("no measures",
+#                                                 "recommend closing (or significantly reduce volume/route/means of transport available)",
+#                                                 "require closing (or prohibit most citizens from using it)"),
+#                                      ordered = T), 
+# `C6_Stay at home requirements` = factor(`C6_Stay at home requirements`, 
+#                                         levels = 0:3, 
+#                                         labels = c("no measures",
+#                                                    "recommend not leaving house",
+#                                                    "require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips",
+#                                                    "require not leaving house with minimal exceptions (eg allowed to leave once a week, or only one person can leave at a time, etc)"),
+#                                         ordered = T), 
+# `C7_Restrictions on internal movement` = factor(`C7_Restrictions on internal movement`, 
+#                                                 levels = 0:2, 
+#                                                 labels = c("no measures",
+#                                                            "recommend not to travel between regions/cities",
+#                                                            "internal movement restrictions in place"),
+#                                                 ordered = T),
+# `C8_International travel controls` = factor(`C8_International travel controls`, 
+#                                             levels = 0:4, 
+#                                             labels = c("no restrictions",
+#                                                        "screening arrivals",
+#                                                        "quarantine arrivals from some or all regions",
+#                                                        "ban arrivals from some regions",
+#                                                        "ban on all regions or total border closure"),
+#                                             ordered = T)
 
 
 
@@ -176,56 +297,25 @@ glimpse(covid_policies)
 
 # Read COVID Case Data ----------------------------------------------------
 
-covid_data = imap_dfr(case_urls, 
-                      ~read_csv(file = .x), 
-                      .id = "case_type") %>% 
-  select(`Province/State`, `Country/Region`, case_type, everything())
-
-head(covid_data)%>% 
-  select(1:10)
 
 # Pivot the data 
-covid_data_pivot = covid_data %>% 
+covid_data_pivot = covid_data_clean %>% 
   pivot_longer(cols = c(-1:-5), 
                names_to = "date", values_to = "total_cases",
                names_transform = list(date = mdy)) %>% 
   clean_names()
 
 covid_data_pivot %>% head()
+  
 
-# Clean up country names, remove cruise ships
-covid_data_clean = covid_data_new %>% 
-  # Sort by country, state, and date
-  arrange(country_region, province_state, date) %>% 
-  # Correct country naming (we'll see why in a moment)
-  mutate(country_region = case_when(
-    country_region == "Korea, South" ~ "South Korea",
-    country_region == "Burma" ~ "Myanmar",
-    country_region == "Congo (Brazzaville)" ~ "Congo, Rep.",
-    country_region == "Congo (Kinshasa)" ~ "Congo, Dem. Rep.",
-    country_region == "Saint Vincent and the Grenadines" ~ "St. Vincent and the Grenadines",
-    country_region == "Saint Kitts and Nevis" ~ "St. Kitts and Nevis",
-    T ~ country_region
-  )) %>% 
-  # Remove the Diamond Princess
-  filter(country_region != "Diamond Princess")
 
-head(covid_data_clean)
 
-covid_cases_by_day = covid_country_level %>% 
-  group_by(country_region) %>% 
-  # Keep only confirmed cases where we have a value for population
-  filter(case_type == "confirmed", !is.na(population),
-         max(total_cases) > 50000) %>% 
-  arrange(country_region, date) %>% 
-  # Identify date of first case in each country
-  mutate(first_case = nth(date, min(which(total_cases > 0))),
-         min_cases = nth(total_cases, min(which(total_cases > 0)))) %>% 
-  ungroup() %>% 
-  # Calculate the daily cases as a proportion of population
-  mutate(daily_cases_pct = daily_cases/population) %>% 
-  select(country_region, population, date, first_case, 
-         total_cases, daily_cases, daily_cases_pct, min_cases)
+
+
+
+
+
+
 
 
 
@@ -233,24 +323,32 @@ covid_cases_by_day = covid_country_level %>%
 
 
 # Join population data by country
-covid_pop_df = covid_data_clean  %>% 
+covid_pop_df = covid_data_pivot  %>% 
   left_join(
-    select(world_pop, country_name, population), by = c("country_region" = "country_name")
-  )
+    select(un_pop_clean, -loc_id), by = c("country_region" = "location")
+  ) %>% 
+  arrange(country_region, province_state, case_type, date) %>% 
+  # Calculate daily cases for each case type at the province/state level
+  group_by(country_region, province_state, case_type) %>% 
+  mutate(daily_cases = total_cases - lag(total_cases, default = 0, order_by = date)) %>% 
+  ungroup()
 
 
 # Aggregate to country level
 covid_country_level = covid_pop_df %>% 
-  group_by(country_region, date, case_type, population) %>% 
+  # Group by country, date, and case type, keep population constant
+  group_by(country_region, date, case_type, pop_total) %>% 
   # Calculate Country level cases for each case type over time
   summarise(total_cases = sum(total_cases, na.rm=T),
             daily_cases = sum(daily_cases, na.rm=T)) %>% 
   ungroup() %>% 
+  group_by(country_region, case_type) %>% 
   # Calculate case rates relative to population size
-  mutate(total_cases_proportion = total_cases/population,
+  mutate(total_cases_proportion = total_cases/pop_total,
          total_cases_per_100k = total_cases_proportion*100000,
-         daily_cases_proportion = daily_cases/population,
-         daily_cases_per_100k = daily_cases_proportion*100000)
+         daily_cases_proportion = daily_cases/pop_total,
+         daily_cases_per_100k = daily_cases_proportion*100000,
+         roll_avg_7day = zoo::rollmean(daily_cases, k = 7, fill = NA, align = "right"))
 
 # Aggregate to global level
 covid_global = covid_country_level %>% 
