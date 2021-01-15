@@ -360,13 +360,18 @@ covid_global = covid_country_level %>%
 
 
 
-# Create plot labels ------------------------------------------------------
 
 
-# Use max values for each case type as the label position
+
+
+
+# Cumulative Global Cases, by type ------------------------------------------------------
+
+# Utility data for plot labels
+# Create total labels for each case type
 case_labels = covid_global %>% 
   group_by(case_type) %>% 
-  top_n(1, total_cases) %>% 
+  slice_max(total_cases, n = 1) %>% 
   ungroup() %>% 
   mutate(date = max(date) + days(2),
          total_cases = total_cases)
@@ -374,9 +379,160 @@ case_labels = covid_global %>%
 # For monthly labels, I want the label to be in the middle of the month (including current month)
 # As a result we can't really use today()
 
-global_date_labels = seq(to = max(covid_global$date), from = ymd("2020-01-15"), by = "1 month")
+global_date_labels = seq.Date(to = max(covid_global$date), from = ymd("2020-01-15"), by = "1 month")
 
 global_date_ticks = seq.Date(to = max(covid_global$date), from = ymd("2020-01-01"), by = "1 month")
+
+case_pal = set_names(viz_colours[c(3,7,6)], unique(covid_pop_df$case_type))
+
+
+
+
+
+
+
+# Cumulative Confirmed Cases, by Country ----------------------------------
+
+
+
+
+top_country_pal = viz_colours[1:5]
+
+coviz_axis = scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+                          date_labels = "%b", 
+                          position = "top")
+
+
+
+
+
+
+
+
+
+
+
+# Lockdown policies plot --------------------------------------------
+
+
+compare_cases_to_policies = function(country = "Ireland", save=F){
+  # Cases
+  cases_viz = covid_country_level %>% 
+    # Specify country, remove recovered cases
+    filter(country_region == country, case_type == "confirmed") %>% 
+    arrange(country_region, date) %>%
+    # mutate(country_region = fct_inorder(country_region)) %>%
+    # Plot
+    ggplot(., aes(x = date, y = roll_avg_7day, fill = case_type))+
+    # Geom
+    geom_area(alpha = .75, colour = my_col_pal[3])+
+    # labs(y = "New confirmed cases, seven-day avg.")+
+    scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+                 date_labels = "%b", 
+                 position = "top")+
+    scale_y_continuous(breaks = scales::pretty_breaks(), labels = scales::comma, position = "left", expand = expansion(add = 50))+
+    scale_fill_manual(values = case_pal)+
+    # Theme
+    theme_mark(md=T, base_size = 12, plot_margin = margin(0,0,0,0))+
+    theme(legend.position = "none",
+          # hide the minor grid lines
+          panel.grid.minor = element_blank(),
+          # hide vertical major grid lines
+          panel.grid.major.x = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x.top = element_line(colour = my_col_pal[4]),
+          axis.ticks.length.x.top = unit(1, "mm"),
+          axis.text.x.top = element_text(margin = margin(b = 7.5)),
+          axis.title = element_blank(),
+          axis.title.y.left = element_blank(),
+          axis.title.x.top = element_blank(),
+          axis.text.y.left = element_text(vjust = 0),
+          strip.text.y.right = element_blank(),
+          panel.spacing.y = unit(-.2, "lines"))
+  
+  # browser()
+  # Policies
+  lockdown_viz = covid_pop_df %>% 
+    filter(country_region %in% c(country)) %>% 
+    distinct(country_region, date) %>% 
+    # I swear I'll clean up the country names so they all join later
+    inner_join(lockdowns, by = c("country_region" = "country_name", "date" = "date")) %>% 
+    replace_na(list(flag = "National")) %>% 
+    ggplot(., aes(x = date, y = lockdown_val, colour = policy, group = flag))+
+    # Geom
+    geom_line(aes(linetype = flag, size = flag), alpha = .95)+
+    # Axes
+    scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+                 date_labels = "%b", 
+                 position = "bottom")+
+    # Colour, linetype, size
+    scale_colour_manual(values = viz_colours, na.value = my_col_pal[1], 
+                      name = NULL, guide = guide_none())+
+    scale_linetype_manual(values = c("Targeted" = "dashed", "National" = "solid"), 
+                          na.translate = F,
+                          guide = guide_legend(title = "Policy scope",
+                                               override.aes = list(size = c(2, 1)),
+                                               keywidth = unit(.8, "cm"),
+                                               label.position = "left", reverse = T))+
+    scale_size_manual(values = c("Targeted" = 1, "National" = 2), na.value = 2, guide = guide_none())+
+    # Facets
+    facet_wrap(~policy, 
+               ncol = 1, strip.position = "right", 
+               scales = "free_y", shrink=F)+
+    # Theme
+    theme_mark(md=T, base_size = 12, plot_margin = margin(0,0,0,0))+
+    theme(legend.position = c(-.1,0.5),
+          legend.spacing = unit(0.5, "cm"),
+          legend.background = element_rect(fill = "#F9FAFA", colour = "#E1EAE9"),
+          legend.title = ggtext::element_markdown(colour = "#2C3535"),
+          legend.text = ggtext::element_markdown(colour = my_col_pal[3]),
+          # legend.margin = margin(0,0,0,0),
+          # hide the minor grid lines
+          panel.grid.minor = element_blank(),
+          # hide vertical major grid lines
+          panel.grid.major.y = element_blank(),
+          axis.title = element_blank(),
+          axis.title.y.left = element_blank(),
+          axis.ticks.y.left = element_blank(),
+          axis.text.y.left = element_blank(),
+          axis.line.y.left = element_blank(),
+          axis.title.y.right = element_blank(),
+          axis.title.x.bottom = element_blank(),
+          strip.text.y.left = element_text(size = 12*1.05, 
+                                           margin = margin(0,0,0,0)),
+          strip.text.y.right = element_text(size = 12*1.05, 
+                                            margin = margin(0,0,0,0)),
+          panel.spacing.y = unit(0, "null"),
+          # axis.text.x = element_blank(),
+          axis.line = element_blank())
+  
+  # Combine the two
+  lockdown_x_cases = cases_viz / lockdown_viz + 
+    plot_layout(heights = c(7,3))+
+    plot_annotation(theme = theme_mark(md=T, plot_margin = margin(25, 40, 0, 60)), 
+                    title = country,#"Cough and response", #str_c("Daily COVID-19 cases ", country),
+                    subtitle = "New confirmed COVID-19 cases (rolling seven-day avg.) and implementation of lockdown policies",
+                    caption = source_caption(sources = c("Johns Hopkins University CSSE", "Oxford University (OxCGRT)")))
+  if(save){
+    ggsave(plot = lockdown_x_cases, 
+           filename = here("plots", "coviz", str_c("lockdown_cases_", country, ".png")), 
+           device = "png", width = 12, height = 9)
+  }
+  
+  
+  lockdown_x_cases
+}
+
+compare_cases_to_policies(country = "Italy", save=F)
+
+
+
+
+
+
+
+# Other Visualizations ----------------------------------------------------
+
 
 # Country labels
 country_labels = covid_country_level %>% 
@@ -400,110 +556,19 @@ country_labels_per_100k = covid_country_level %>%
   mutate(date =max(date) + days(2)) %>% # Add two days to the date for the label position
   arrange(-cases_per_100k)
 
-top_country_pal = viz_colours[1:5]
+covid_cases_by_day = covid_country_level %>% 
+  group_by(country_region) %>% 
+  # Keep only confirmed cases where we have a value for population
+  filter(case_type == "confirmed", !is.na(population),
+         max(total_cases) > 50000) %>% 
+  arrange(country_region, date) %>% 
+  # Identify date of first case in each country
+  mutate(first_case = nth(date, min(which(total_cases > 0))),
+         min_cases = nth(total_cases, min(which(total_cases > 0)))) %>% 
+  ungroup() %>% 
+  # Calculate the daily cases as a proportion of population
+  mutate(daily_cases_pct = daily_cases/population) %>% 
+  select(country_region, population, date, first_case, 
+         total_cases, daily_cases, daily_cases_pct, min_cases)
 
-coviz_axis = scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
-                          date_labels = "%b", 
-                          position = "top")
 
-
-
-# Specify Lockdown information --------------------------------------------
-
-# Create boolean values for whether a lockdown was enacted
-################## IMPORTANT:  ############################
-# I specify a policy as a lockdown when the policy is required rather than recommended
-lockdowns = covid_policies %>% 
-  select(CountryName:`C8_International travel controls`, M1_Wildcard:ConfirmedDeaths) %>%
-  clean_names() %>% 
-  mutate(country_name = if_else(country_name == "United States", "US", country_name),
-         date = ymd(date),
-         lockdown_school_closing = (c1_school_closing > 1 & c1_flag == 1),
-         lockdown_workplace_closing = (c2_workplace_closing > 1 & c2_flag == 1),
-         lockdown_cancel_public_events = (c3_cancel_public_events > 1 & c3_flag == 1),
-         lockdown_restrictions_on_gatherings = (c4_restrictions_on_gatherings > 0 & c4_flag == 1),
-         lockdown_close_public_transport = (c5_close_public_transport > 0 & c5_flag == 1),
-         lockdown_stay_at_home_requirements = (c6_stay_at_home_requirements  > 1 & c6_flag == 1),
-         lockdown_restrictions_on_internal_movement = (c7_restrictions_on_internal_movement > 1 & c7_flag == 1),
-         lockdown_international_travel_controls = (c8_international_travel_controls > 1)) %>% 
-  pivot_longer(cols = starts_with("lockdown"), names_to = "lockdown_type", values_to = "lockdown_active", names_pattern = "lockdown_([a-z_]+)")
-
-compare_cases_to_policies = function(country = "US"){
-  # Cases
-  cases_viz = covid_cases_by_day %>% 
-    # Specify country
-    filter(country_region == country) %>% 
-    arrange(first_case, -min_cases, country_region, date) %>%
-    mutate(country_region = fct_inorder(country_region)) %>%
-    # Plot
-    ggplot(., aes(x = date, y = daily_cases, group = country_region))+
-    geom_area(alpha = .75, fill = viz_colours[1], colour = my_col_pal[3])+
-    labs(title = str_c("COVID-19 cases and lockdown policies in ", country))+
-    coviz_axis+
-    scale_y_continuous(breaks = scales::pretty_breaks(), labels = scales::comma, position = "left")+
-    theme_mark(md=T, base_size = 12, plot_margin = margin(0,20,-10,20))+
-    theme(legend.position = "none",
-          # hide the minor grid lines
-          panel.grid.minor = element_blank(),
-          # hide vertical major grid lines
-          panel.grid.major.x = element_blank(),
-          axis.title = element_blank(),
-          axis.title.y.left = element_blank(),
-          axis.title.x.top = element_blank(),
-          strip.text.y.right = element_blank(),
-          panel.spacing.y = unit(-.2, "lines"),
-          axis.line = element_blank())
-  # browser()
-  # Policies
-  lockdown_viz = covid_cases_by_day %>% 
-    filter(country_region %in% c(country)) %>% 
-    # I swear I'll clean up the country names so they all join later
-    inner_join(lockdowns, by = c("country_region" = "country_name", "date" = "date")) %>% 
-    arrange(first_case, -min_cases, country_region, date) %>%
-    mutate(country_region = fct_inorder(country_region),
-           lockdown_type = factor(str_to_title(str_replace_all(lockdown_type, "_", " ")),
-                                  levels = c("School Closing", "Workplace Closing", 
-                                             "Cancel Public Events", "Restrictions On Gatherings", 
-                                             "Close Public Transport", "Stay At Home Requirements", 
-                                             "Restrictions On Internal Movement", "International Travel Controls"), 
-                                  ordered = T),
-           lockdown_val = na_if(lockdown_active*as.numeric(lockdown_type)/2, 0)) %>% 
-    ggplot(., aes(x = date, y = lockdown_val, colour = lockdown_type, group = lockdown_type))+
-    geom_line(alpha = .85, size = 2)+
-    labs(caption = source_caption(sources = c(jhu_source, oxford_source)))+
-    scale_colour_manual(values = viz_colours, na.value = my_col_pal[1], 
-                        name = NULL)+
-    scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
-                 date_labels = "%b", 
-                 position = "bottom")+
-    facet_wrap(~lockdown_type, 
-               ncol = 1, strip.position = "right", 
-               scales = "free_y", shrink=F)+
-    theme_mark(md=T, base_size = 12, plot_margin = margin(-5,20,-5,20))+
-    theme(legend.position = "none",
-          # hide the minor grid lines
-          panel.grid.minor = element_blank(),
-          # hide vertical major grid lines
-          panel.grid.major.y = element_blank(),
-          axis.title = element_blank(),
-          axis.title.y.left = element_blank(),
-          axis.title.y.right = element_blank(),
-          axis.title.x.bottom = element_blank(),
-          strip.text.y.left = element_text(angle = 0, vjust = 0.5, hjust = 1, 
-                                           margin = margin(0,0,0,0)),
-          strip.text.y.right = element_text(angle = 0, vjust = 0.5, hjust = 0, 
-                                            margin = margin(0,0,0,0)),
-          panel.spacing.y = unit(0, "null"),
-          # axis.text.x = element_blank(),
-          axis.line = element_blank(),
-          axis.text.y = element_blank())
-  
-  # Combine the two
-  cases_viz / lockdown_viz + 
-    plot_layout(design = c(
-      area(t = 1, l = 1, b = 5, r = 4),
-      area(t = 6, l = 1, b = 7, r = 4)
-    ))+
-    plot_annotation(theme = theme_mark(plot_margin = margin(10, 10, 0, 10)))
-  
-}
