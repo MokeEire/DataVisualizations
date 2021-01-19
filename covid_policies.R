@@ -326,6 +326,7 @@ covid_pop_df = covid_data_pivot  %>%
   left_join(
     select(un_pop_clean, -loc_id), by = c("country_region" = "location")
   ) %>% 
+  # Order by country, region, case type, then date
   arrange(country_region, province_state, case_type, date) %>% 
   # Calculate daily cases for each case type at the province/state level
   group_by(country_region, province_state, case_type) %>% 
@@ -342,12 +343,16 @@ covid_country_level = covid_pop_df %>%
             daily_cases = sum(daily_cases, na.rm=T)) %>% 
   ungroup() %>% 
   group_by(country_region, case_type) %>% 
-  # Calculate case rates relative to population size
-  mutate(total_cases_proportion = total_cases/pop_total,
-         total_cases_per_100k = total_cases_proportion*100000,
-         daily_cases_proportion = daily_cases/pop_total,
-         daily_cases_per_100k = daily_cases_proportion*100000,
-         roll_avg_7day = zoo::rollmean(daily_cases, k = 7, fill = NA, align = "right"))
+  mutate(
+    # Calculate case rates relative to population size
+    total_cases_proportion = total_cases/pop_total,
+    total_cases_per_100k = total_cases_proportion*100000,
+    daily_cases_proportion = daily_cases/pop_total,
+    daily_cases_per_100k = daily_cases_proportion*100000,
+    # Calculate rolling 7 day average for daily cases;
+    # Right align means on a given day, calculate the average of the past 7 days (inclusive)
+    roll_avg_7day = zoo::rollmean(daily_cases, k = 7, fill = NA, align = "right")
+    )
 
 # Aggregate to global level
 covid_global = covid_country_level %>% 
@@ -420,16 +425,18 @@ compare_cases_to_policies = function(country = "Ireland", save=F){
     # Specify country, remove recovered cases
     filter(country_region == country, case_type == "confirmed") %>% 
     arrange(country_region, date) %>%
-    # mutate(country_region = fct_inorder(country_region)) %>%
     # Plot
     ggplot(., aes(x = date, y = roll_avg_7day, fill = case_type))+
     # Geom
     geom_area(alpha = .75, colour = my_col_pal[3])+
-    # labs(y = "New confirmed cases, seven-day avg.")+
-    scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+    # Axes
+    scale_x_date(breaks = global_date_ticks, 
                  date_labels = "%b", 
                  position = "top")+
-    scale_y_continuous(breaks = scales::pretty_breaks(), labels = scales::comma, position = "left", expand = expansion(add = 50))+
+    scale_y_continuous(breaks = scales::pretty_breaks(), 
+                       labels = scales::comma, 
+                       position = "left", expand = expansion(add = 50))+
+    # Colour scale
     scale_fill_manual(values = case_pal)+
     # Theme
     theme_mark(md=T, base_size = 12, plot_margin = margin(0,0,0,0))+
