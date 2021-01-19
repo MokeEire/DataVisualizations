@@ -198,10 +198,10 @@ lockdowns = covid_policies %>%
          c2_lockdown = (c2_response > 1),
          c3_lockdown = (c3_response > 1),
          c4_lockdown = (c4_response > 0),
-         c5_lockdown = (c5_response > 0),
+         c5_lockdown = (c5_response > 1),
          c6_lockdown = (c6_response  > 1),
          c7_lockdown = (c7_response > 1),
-         c8_lockdown = (c8_response > 1)) %>% 
+         c8_lockdown = (c8_response > 2)) %>% 
   # pivot to policy, response, flag
   pivot_longer(!c(country_name, date), names_to = c("policy", ".value"), names_sep = "_") %>% 
   # provide policy labels
