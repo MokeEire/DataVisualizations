@@ -220,8 +220,7 @@ lockdowns = covid_policies %>%
          lockdown_val = na_if(lockdown*as.numeric(policy), 0))
 
 covid_policies %>% 
-  select(CountryName:`C8_International travel controls`, M1_Wildcard:ConfirmedDeaths) %>%
-  clean_names() %>% 
+  select(country_name:c8_international_travel_controls, m1_wildcard:confirmed_deaths) %>%
   mutate(country_name = if_else(country_name == "United States", "US", country_name),
          date = ymd(date),
          # Lockdown booleans
