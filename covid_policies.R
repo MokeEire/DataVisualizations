@@ -468,7 +468,7 @@ compare_cases_to_policies = function(country = "Ireland", save=F){
     # Geom
     geom_line(aes(linetype = flag, size = flag), alpha = .95)+
     # Axes
-    scale_x_date(breaks = global_date_ticks, date_minor_breaks = "1 week",
+    scale_x_date(breaks = global_date_ticks, 
                  date_labels = "%b", 
                  position = "bottom")+
     # Colour, linetype, size
@@ -476,10 +476,10 @@ compare_cases_to_policies = function(country = "Ireland", save=F){
                       name = NULL, guide = guide_none())+
     scale_linetype_manual(values = c("Targeted" = "dashed", "National" = "solid"), 
                           na.translate = F,
-                          guide = guide_legend(title = "Policy scope",
-                                               override.aes = list(size = c(2, 1)),
-                                               keywidth = unit(.8, "cm"),
-                                               label.position = "left", reverse = T))+
+                          guide = guide_legend(title = "Geographical scope",
+                                               override.aes = list(size = c(1.75, .8)),
+                                               keywidth = unit(.9, "cm"),
+                                               label.position = "left", reverse = T, label.hjust = 1, title.hjust = -.25))+
     scale_size_manual(values = c("Targeted" = 1, "National" = 2), na.value = 2, guide = guide_none())+
     # Facets
     facet_wrap(~policy, 
@@ -487,11 +487,11 @@ compare_cases_to_policies = function(country = "Ireland", save=F){
                scales = "free_y", shrink=F)+
     # Theme
     theme_mark(md=T, base_size = 12, plot_margin = margin(0,0,0,0))+
-    theme(legend.position = c(-.1,0.5),
+    theme(legend.position = c(-.01,0.5),
           legend.spacing = unit(0.5, "cm"),
           legend.background = element_rect(fill = "#F9FAFA", colour = "#E1EAE9"),
-          legend.title = ggtext::element_markdown(colour = "#2C3535"),
-          legend.text = ggtext::element_markdown(colour = my_col_pal[3]),
+          legend.title = ggtext::element_markdown(colour = "#2C3535", hjust = -.25),
+          legend.text = ggtext::element_markdown(colour = my_col_pal[3]), 
           # legend.margin = margin(0,0,0,0),
           # hide the minor grid lines
           panel.grid.minor = element_blank(),
@@ -515,21 +515,21 @@ compare_cases_to_policies = function(country = "Ireland", save=F){
   # Combine the two
   lockdown_x_cases = cases_viz / lockdown_viz + 
     plot_layout(heights = c(7,3))+
-    plot_annotation(theme = theme_mark(md=T, plot_margin = margin(25, 40, 0, 60)), 
-                    title = country,#"Cough and response", #str_c("Daily COVID-19 cases ", country),
-                    subtitle = "New confirmed COVID-19 cases (rolling seven-day avg.) and implementation of lockdown policies",
+    plot_annotation(theme = theme_mark(md=T, plot_margin = margin(25, 15, 0, 60)), 
+                    title = str_c(country, "'s COVID response"),#"Cough and response", #str_c("Daily COVID-19 cases ", country),
+                    subtitle = "Daily confirmed cases (rolling seven-day avg.) and Government lockdown policies",
                     caption = source_caption(sources = c("Johns Hopkins University CSSE", "Oxford University (OxCGRT)")))
   if(save){
     ggsave(plot = lockdown_x_cases, 
            filename = here("plots", "coviz", str_c("lockdown_cases_", country, ".png")), 
-           device = "png", width = 12, height = 9)
+           device = "png", width = 16, height = 10)
   }
   
   
   lockdown_x_cases
 }
 
-compare_cases_to_policies(country = "Italy", save=F)
+compare_cases_to_policies(save=T)
 
 
 
