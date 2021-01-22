@@ -267,9 +267,7 @@ server <- function(input, output) {
             # pivot to policy, response, flag
             pivot_longer(!c(country_name, date), names_to = c("policy", ".value"), names_sep = "_") %>% 
             # provide policy labels
-            mutate(policy = str_replace_all(policy, policy_dict)) %>% 
-            # Add factor labels to flag and make policy a factor
-            mutate(policy = factor(policy,
+            mutate(policy = factor(str_replace_all(policy, policy_dict),
                                    levels = c("School closing", 
                                               "Workplace closing", 
                                               "Cancel public events",
@@ -279,33 +277,47 @@ server <- function(input, output) {
                                               "Restrictions on internal movement",
                                               "International travel controls"), 
                                    ordered = T),
-                   lockdown_val = na_if(lockdown*as.numeric(policy), 0))
-        
-       country_data() %>% 
-            distinct(country_region, date) %>% 
-            # I swear I'll clean up the country names so they all join later
-            inner_join(policy_data, by = c("country_region" = "country_name", "date" = "date")) %>% 
+                   # Add factor labels to flag and make policy a factor
+                   lockdown_val = na_if(lockdown*as.numeric(policy), 0)) %>% 
             replace_na(list(flag = "National"))
+
     })
     
     cases_viz = reactive({
-        country_data() %>% 
+        multiple_cases = (length(input$case_type) > 1)
+        
+            
+        plot = country_data() %>% 
             # Plot
         ggplot(., aes(x = date, y = roll_avg_7day, fill = case_type))+
             # Geom
-            geom_area(alpha = .75, colour = my_col_pal[3])+
+            geom_area(alpha = .85, colour = my_col_pal[3], position = "identity")+
             # Axes
             scale_x_date(breaks = global_date_ticks, 
                          date_labels = "%b", 
                          position = "top")+
             scale_y_continuous(breaks = scales::pretty_breaks(), 
                                labels = scales::comma, 
-                               position = "left", expand = expansion(add = c(0,50)))+
-            # Colour scale
-            scale_fill_manual(values = case_pal)+
+                               position = "left", expand = expansion(add = c(0,50)))
+
+        if(multiple_cases){
+            plot = plot+
+                scale_fill_manual(values = case_pal, labels = str_to_title, name = "Case Type",
+                                  guide = guide_legend(ncol = 1))
+        } else {
+            plot = plot+
+                scale_fill_manual(values = case_pal, guide = guide_none())
+        }
+        plot+
             # Theme
             theme_mark(md=T, base_size = 12, plot_margin = margin(0,0,5,0))+
-            theme(legend.position = "none",
+            theme(legend.position = c(1.1, .5),
+                  legend.background = element_rect(fill = "#F9FAFA", colour = "#E1EAE9"),
+                  legend.margin = margin(10, 10, 10, 10),
+                  legend.key = element_rect(size = 10, colour = NA, fill = my_col_pal[1]),
+                  legend.key.height = unit(.6, "cm"),
+                  legend.title = ggtext::element_markdown(colour = "#2C3535", hjust = 0),
+                  legend.text = ggtext::element_markdown(colour = my_col_pal[3], vjust = .5), 
                   # hide the minor grid lines
                   panel.grid.minor = element_blank(),
                   # hide vertical major grid lines
@@ -317,9 +329,7 @@ server <- function(input, output) {
                   axis.title = element_blank(),
                   axis.title.y.left = element_blank(),
                   axis.title.x.top = element_blank(),
-                  axis.text.y.left = element_text(vjust = 0),
-                  strip.text.y.right = element_blank(),
-                  panel.spacing.y = unit(-.2, "lines"))
+                  axis.text.y.left = element_text(vjust = 0))
     })
     
     policy_viz = reactive({
@@ -381,12 +391,13 @@ server <- function(input, output) {
     })
     
     output$whole_plot <- renderPlot({
+        case_label = if_else(length(input$case_type) == 3, "All", tolower(str_c(input$case_type, collapse = " & ")))
         
         cases_viz() / policy_viz() + 
             plot_layout(heights = c(7,3))+
-            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(0, 15, 0, 60)), 
+            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 15, 10, 60)), 
                             title = str_c(input$country, "'s COVID response"),#"Cough and response", #str_c("Daily COVID-19 cases ", country),
-                            subtitle = str_c(input$case_type, ", daily cases (rolling seven-day avg.) and Government lockdown policies"))
+                            subtitle = str_c("Daily cases, ", case_label, ", (rolling seven-day avg.) and Government lockdown policies"))
         
     })
     
