@@ -71,8 +71,50 @@ body {
 .well {
   background-color: var(--skobeloff);
   border-color: var(--gridline-col);
+  margin-bottom: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+
+}
+
+.navbar {
+  margin-bottom: 10px !important;
 }
 
 label {
   color: var(--bg-col);
+  display: flex;
+  max-width: 100%;
+  margin-right: 0;
+}
+
+.awesome-radio {
+  display: flex;
+  font-size: 12px;
+}
+
+.inline-label {
+  display: inline-flex;
+  width: 100% !important;
+}
+
+.shiny-input-container:not(.shiny-input-container-inline) {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.form-control.selectize-control {
+  display: flex;
+  flex-grow: 1;
+  min-width: 12vw;
+  margin-top: 5px;
+  margin-left: 15px;
+}
+
+label[for='country-selectized']{
+  color: var(--font-col);
+}
+
+label[for='case_type-selectized']{
+  color: var(--font-col);
 }
