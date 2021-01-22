@@ -82,173 +82,154 @@ pickerInput2 <- function (inputId, label = NULL, choices, selected = NULL, multi
 ui <- navbarPage(selected = "National Level",
     theme = "app.css",
 
-    # tags$head(
-    #     tags$style(HTML("
-    #   .form-group {
-    #            display: flex;
-    #            }
-    # 
-    # "))),
-    
+
     # App title ----
     title = "COVID Lockdown Policies",
     
     
-               tabPanel("National Level",
+               tabPanel("National Level", id = "main",
                  # Sidebar layout with input and output definitions ----
                  sidebarLayout(
                    
                    # Sidebar panel for inputs ----
                    sidebarPanel(
                      
-                     HTML(str_c("<p style='color: var(--bg-col); font-size: 14px;'>Explore the timeline of nation's reported COVID cases and government containment policies (\"lockdowns\") using the ", 
-                                "<a style='color: var(--bg-col);' href = 'https://github.com/CSSEGISandData/COVID-19'>COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University</a>.", 
-                                " and the ", 
-                                "<a style='color: var(--bg-col);' href ='https://github.com/OxCGRT/covid-policy-tracker'>Oxford Covid-19 Government Response Tracker (OxCGRT)</a>.</p>",
-                                "<p style='color: var(--bg-col); font-size: 14px;'>The past year of uncertainty has likely made this obvious, but it's still important to say that you can't draw any causal relationships from these visualizations i.e. they won't tell you if closing schools stops the spread of COVID.",
-                                "  If you look at a few different countries, you'll notice that the effects of introducing or lifting policies vary by country, time period, and a whole host of other factors.  ",
-                                "I hope they will stimulate curiosity and make people ask questions.</p>")),
-                     # tagList(
-                     #     # p(style="color: var(--bg-col); font-size: 14px;",
-                     #     #     "Compare COVID cases over time to the government containment policies implemented in the country."
-                     #     # ), 
-                     #     p(style="color: var(--bg-col); font-size: 14px;",
-                     #         , a("COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University", href = 'https://github.com/CSSEGISandData/COVID-19', style="color: var(--bg-col);",), " and the ", a("Oxford Covid-19 Government Response Tracker (OxCGRT)", href = 'https://github.com/OxCGRT/covid-policy-tracker', style="color: var(--bg-col);"), "."),
-                     #     p(style="color: var(--bg-col); font-size: 14px;",
-                     #       str_c())
-                     # ),
-                     # Country and case type dropdowns
-                     # Input: Slider for the number of bins ----
-                     fluidRow(
-                       column(6,
-                              selectizeInput("country", #width = "250px", ratio = c(5,7),
-                                          label = "Country", choices = sort(unique(covid_policies$country_name)), selected = "Ireland")
-                              ),
-                       column(6,
-                              selectizeInput("case_type", width = "250px", #ratio = c(5,7),
-                                          label = "Case Type", 
-                                          choices = c("Confirmed", "Deaths", "Recovered"), selected = "Confirmed")
-                              )
-                     )
-                     ,
-                     # Input: Slider for the number of bins ----
-                     hr(),
                      
-                     h4("What constitutes a lockdown?", style="color: var(--bg-col);"),
+
+                     h3("Select which policies to show", style="color: var(--bg-col); margin-top: 0px;"),
                      
                      # TODO: Make these sliders somehow
                      # Policy options
-                     fluidRow(
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c1",
-                                label = "School closure",
-                                choices = c("1 - Recommend closing or all schools open with alterations resulting in significant differences compared to non-COVID-19 operations" = 1,
-                                            "2 - Require closing (only some levels or categories, e.g. just high school, or just public schools)" = 2,
-                                            "3 - Require closing all levels" = 3),
-                                selected = 2,
-                                # inline=T
-                              )
-                       ),
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c2",
-                                label = "Workplace closure", 
-                                choices = c("1 - Recommend closing (or recommend work from home)" = 1, 
-                                            "2 - Require closing (or work from home) for some sectors or categories of workers" = 2, 
-                                            "3 - Require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors)" = 3),
-                                selected = 2,
-                                # inline=T
-                              )
-                       )
-
+                     awesomeRadio(
+                         inputId = "c1",
+                         label = "School closure",
+                         choices = c("1 - Recommend closing or all schools open with alterations resulting in significant differences compared to non-COVID-19 operations" = 1,
+                                     "2 - Require closing (only some levels or categories, e.g. just high school, or just public schools)" = 2,
+                                     "3 - Require closing all levels" = 3),
+                         selected = 2,
+                     ),
+                     awesomeRadio(#ratio = c(4,8), width = "100%",
+                         inputId = "c2",
+                         label = "Workplace closure", 
+                         choices = c("1 - Recommend closing (or recommend work from home)" = 1, 
+                                     "2 - Require closing (or work from home) for some sectors or categories of workers" = 2, 
+                                     "3 - Require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors)" = 3),
+                         selected = 2,
                      ),
                      fluidRow(
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c3",
-                                label = "Cancel public events", 
-                                choices = c("1 - Recommend cancelling" = 1, 
-                                            "2 - Require cancelling" = 2),
-                                selected = 2,
-                                # inline=T
-                              )
-                       ),
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c4",
-                                label = "Restrictions on gatherings", 
-                                choices = c("1 - Restrictions on very large gatherings (the limit is above 1000 people)" = 1, 
-                                            "2 - Restrictions on gatherings between 101-1000 people" = 2, 
-                                            "3 - Restrictions on gatherings between 11-100 people" = 3,
-                                            "4 - Restrictions on gatherings of 10 people or fewer" = 4),
-                                selected = 1,
-                                # inline=T
-                              )
-                       )
-
+                         column(6,
+                                awesomeRadio(#ratio = c(4,8), width = "100%",
+                                    inputId = "c3",
+                                    label = "Cancel public events", 
+                                    choices = c("1 - Recommend cancelling" = 1, 
+                                                "2 - Require cancelling" = 2),
+                                    selected = 2
+                                )
+                                ),
+                         column(6,
+                                awesomeRadio(#ratio = c(4,8), width = "100%",
+                                    inputId = "c7",
+                                    label = "Restrictions on internal movement", 
+                                    choices = c("1 - Recommend not to travel between regions/cities" = 1, 
+                                                "2 - Internal movement restrictions in place" = 2),
+                                    selected = 2
+                                )
+                                )
                      ),
-                     fluidRow(
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c5",
-                                label = "Close public transport", 
-                                choices = c("1 - Recommend closing (or significantly reduce volume/route/means of transport available)" = 1, 
-                                            "2 - Require closing (or prohibit most citizens from using it)" = 2),
-                                selected = 2,
-                                # inline=T
-                              )
-                              ),
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c6",
-                                label = "Stay at home requirements", 
-                                choices = c("1 - Recommend not leaving house" = 1, 
-                                            "2 - Require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips" = 2, 
-                                            "3 - Require not leaving house with minimal exceptions (e.g. allowed to leave once a week, or only one person can leave at a time, etc.)" = 3),
-                                selected = 2,
-                                # inline=T
-                              )
-                              )
-
+                     awesomeRadio(#ratio = c(4,8), width = "100%",
+                         inputId = "c4",
+                         label = "Restrictions on gatherings", 
+                         choices = c("1 - Restrictions on very large gatherings (the limit is above 1000 people)" = 1, 
+                                     "2 - Restrictions on gatherings between 101-1000 people" = 2, 
+                                     "3 - Restrictions on gatherings between 11-100 people" = 3,
+                                     "4 - Restrictions on gatherings of 10 people or fewer" = 4),
+                         selected = 1
                      ),
-                     fluidRow(
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c7",
-                                label = "Restrictions on internal movement", 
-                                choices = c("1 - Recommend not to travel between regions/cities" = 1, 
-                                            "2 - Internal movement restrictions in place" = 2),
-                                selected = 2,
-                                # inline=T
-                              )
-                              ),
-                       column(6,
-                              selectizeInput(#ratio = c(4,8), width = "100%",
-                                inputId = "c8",
-                                label = "International travel control", 
-                                choices = c("1 - Screening arrivals" = 1, 
-                                            "2 - Quarantine arrivals from some or all regions" = 2, 
-                                            "3 - Ban arrivals from some regions" = 3,
-                                            "4 - Ban on all regions or total border closure" = 4),
-                                selected = 3,
-                                # inline=T
-                              )
-                              )
-
+                     awesomeRadio(#ratio = c(4,8), width = "100%",
+                         inputId = "c5",
+                         label = "Close public transport", 
+                         choices = c("1 - Recommend closing (or significantly reduce volume/route/means of transport available)" = 1, 
+                                     "2 - Require closing (or prohibit most citizens from using it)" = 2),
+                         selected = 2
+                     ),
+                     awesomeRadio(#ratio = c(4,8), width = "100%",
+                         inputId = "c6",
+                         label = "Stay at home requirements", 
+                         choices = c("1 - Recommend not leaving house" = 1, 
+                                     "2 - Require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips" = 2, 
+                                     "3 - Require not leaving house with minimal exceptions (e.g. allowed to leave once a week, or only one person can leave at a time, etc.)" = 3),
+                         selected = 2
+                     ),
+                     awesomeRadio(#ratio = c(4,8), width = "100%",
+                         inputId = "c8",
+                         label = "International travel control", 
+                         choices = c("1 - Screening arrivals" = 1, 
+                                     "2 - Quarantine arrivals from some or all regions" = 2, 
+                                     "3 - Ban arrivals from some regions" = 3,
+                                     "4 - Ban on all regions or total border closure" = 4),
+                         selected = 3
                      )
-
-                     
                    ),
                    # Main panel for displaying outputs ----
                    mainPanel(
+                       fluidRow(
+                           column(4,
+                                  selectizeInput("country", #width = "250px", ratio = c(5,7),
+                                                 label = "Country", choices = sort(unique(covid_policies$country_name)), 
+                                                 selected = "Ireland") %>% 
+                                      tagAppendAttributes(class = 'inline-label')
+                           ) %>% 
+                               tagAppendAttributes(style = 'display:flex; flex-flow: row; flex-shrink:0; flex-grow:1'),
+                           column(4, 
+                                  selectizeInput("case_type", width = "250px", #ratio = c(5,7),
+                                                 label = "Case Type", multiple = T, 
+                                                 choices = c("Confirmed", "Deaths", "Recovered"), selected = "Confirmed") %>% 
+                                      tagAppendAttributes(class = 'inline-label')
+                           ) %>% 
+                               tagAppendAttributes(style = 'display:flex; flex-flow: row; flex-shrink:0; flex-grow:1'),
+                           column(4)
+                       ) %>% 
+                           tagAppendAttributes(style = 'display:flex')
+                       ,
+                       fluidRow(style = "overflow:auto;",
+                           # Output: Histogram ----
+                           withSpinner(plotOutput(outputId = "whole_plot", height = "725px"), type = 8, color = viz_colours[2])
+                           
+                       ),
+                       fluidRow(
+                           uiOutput("caption")
+                       )
                      
-                     # Output: Histogram ----
-                     withSpinner(plotOutput(outputId = "whole_plot", height = "700px")),
-                     uiOutput("caption")
+                     
                      
                    )
                )
+    ),
+    tabPanel("About", id = "about", fluid = TRUE, #icon = "info-circle",
+             fluidRow(
+                 column(6,
+                        #br(),
+                        h4("About the Project"),
+                        p("The purpose of this project is to enable an exploration of the timeline of COVID cases and varying degree of government containment policies (\"lockdowns\") used to slow the spread of the virus. I saw a common sentiment that the lockdowns were putting a massive burden on populations while failing to actually slow transmission rates. This is an interesting question because it seems intuitive that lockdowns would have some kind of diminishing effect on transmission rates, but I had no prior knowledge of the effectiveness of containment policies. At the same time, whether lockdowns were ", em(strong("worth")), " the costs imposed on people is also an important question and one of the first steps in answering this is evaluating the potential benefits of lockdowns."),
+                        p("Naturally we can't draw any causal relationships from these visualizations alone i.e. ", 
+                          strong("they won't tell you if closing schools stops the spread of COVID"), ".  If you look at a few different countries, you'll notice that the effects of introducing or lifting policies vary by country, time period, and a whole host of other factors. At the same time, you might be able to find some patterns worth investigating further. You can find the source code, and leave any comments/suggestions,", a(" on github", href = "https://github.com/MokeEire/DataVisualizations"), "."),
+                        hr(),
+                        h4("Sources"),
+                        tags$ul(
+                            tags$li(a("JHU CSSE COVID-19 Data", href = "https://github.com/CSSEGISandData/COVID-19")),
+                            tags$li(a("Oxford Covid-19 Government Response Tracker (OxCGRT)", href = "https://github.com/OxCGRT/covid-policy-tracker"))
+                        ),
+                        br()
+
+                 ),
+                 column(6
+                 )
+             ),
+             h4("Built with",
+                img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "30px"),
+                "by",
+                img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png", height = "30px"),
+                ".")
     )
 )
 
