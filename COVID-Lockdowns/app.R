@@ -248,14 +248,14 @@ server <- function(input, output) {
     
 
     country_data = reactive({
-        covid_country_level[covid_country_level$country_region == input$country & covid_country_level$case_type == tolower(input$case_type), ]
+        covid_country_level[covid_country_level$country_region == input$country & covid_country_level$case_type %in% tolower(input$case_type), ]
     })
     
     lockdown_data = reactive({
-        policy_data = covid_policies %>% 
-            mutate(# Create boolean values for whether a lockdown was enacted
-                ################## IMPORTANT:  ############################
-                # I specify a policy as a lockdown when the policy is required rather than recommended
+
+        covid_policies[covid_policies$country_name == input$country & covid_policies$date %in% unique(country_data()$date), ] %>% 
+            mutate(
+                # Create boolean values for whether a lockdown was enacted
                 c1_lockdown = (c1_response >= input$c1),
                 c2_lockdown = (c2_response >= input$c2),
                 c3_lockdown = (c3_response >= input$c3),
