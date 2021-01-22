@@ -358,11 +358,11 @@ server <- function(input, output) {
             # Theme
             theme_mark(md=T, base_size = 12, plot_margin = margin(0,0,0,0))+
             theme(legend.position = c(-.025,0.5),
+                  legend.margin = margin(10, 10, 10, 10),
                   legend.spacing = unit(0.5, "cm"),
                   legend.background = element_rect(fill = "#F9FAFA", colour = "#E1EAE9"),
                   legend.title = ggtext::element_markdown(colour = "#2C3535", hjust = -.25),
                   legend.text = ggtext::element_markdown(colour = my_col_pal[3]), 
-                  # legend.margin = margin(0,0,0,0),
                   # hide the minor grid lines
                   panel.grid.minor = element_blank(),
                   # hide vertical major grid lines
@@ -371,6 +371,7 @@ server <- function(input, output) {
                   axis.title.y.left = element_blank(),
                   axis.ticks.y.left = element_blank(),
                   axis.text.y.left = element_blank(),
+                  axis.text.x.bottom = element_text(margin = margin(b = 5)),
                   axis.line.y.left = element_blank(),
                   axis.title.y.right = element_blank(),
                   axis.title.x.bottom = element_blank(),
