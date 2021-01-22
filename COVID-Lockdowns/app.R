@@ -7,6 +7,13 @@
 #    http://shiny.rstudio.com/
 #
 
+# dir.create('~/.fonts')
+# file.copy("www/NotoSans-Regular.ttf", "~/.fonts")
+# system('fc-cache -f ~/.fonts')
+# file.copy("www/CabinCondensed-Regular.ttf", "~/.fonts")
+# system('fc-cache -f ~/.fonts')
+# file.copy("www/FiraSansExtraCondensed-Regular.ttf", "~/.fonts")
+# system('fc-cache -f ~/.fonts')
 library(extrafont)
 library(shiny)
 library(shinydashboard)
@@ -16,11 +23,19 @@ library(tidyverse)
 library(lubridate)
 library(here)
 
-here("scripts", c("theme_mark.R", "load_coviz_data.R")) %>% 
+here("scripts", 
+     "theme_mark.R") %>%
+     # c("theme_mark.R", "load_coviz_data.R")) %>%
     walk(source)
 
-# load("covid_policies.RData")
-# load("covid_country_level.RData")
+load("covid_policies.RData")
+load("covid_country_level.RData")
+
+global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
+
+global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), by = "1 month")
+case_pal = set_names(viz_colours[c(3,7,6)], unique(covid_country_level$case_type))
+
 
 policy_dict = c("c1" = "School closing",
                 "c2" = "Workplace closing",
@@ -30,10 +45,6 @@ policy_dict = c("c1" = "School closing",
                 "c6" = "Stay at home requirements",
                 "c7" = "Restrictions on internal movement",
                 "c8" = "International travel controls")
-# global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
-# 
-# global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), by = "1 month")
-# case_pal = set_names(viz_colours[c(3,7,6)], unique(covid_country_level$case_type))
 
 
 
