@@ -152,8 +152,8 @@ theme_mark = function(title_family = "Cabin Condensed",
         axis.line = element_line(colour = line_colour),
         
         # Legend
-        legend.title = ggtext::element_markdown(size = base_size * 1.2),
-        legend.text = ggtext::element_markdown(size = base_size * .9),
+        legend.title = ggtext::element_markdown(size = base_size * 1.1),
+        legend.text = ggtext::element_markdown(size = base_size),
         
         # Facets
         strip.text.y.left = element_text(size = base_size * 1.1, 
