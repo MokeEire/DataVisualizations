@@ -32,7 +32,9 @@ covid_data = imap_dfr(case_urls,
                                                                 "Congo \\(Kinshasa\\)" = "Congo, Dem. Rep.",
                                                                 "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
                                                                 "Saint Kitts and Nevis" = "St. Kitts and Nevis",
-                                                                "Taiwan\\*" = "Taiwan")))
+                                                                "Taiwan\\*" = "Taiwan")),
+         # Make case_type a factor to bring deaths geom to front
+         case_type = factor(case_type, levels = c("confirmed", "recovered", "deaths", ordered = T)))
 
 
 # World Population Data ---------------------------------------------------
