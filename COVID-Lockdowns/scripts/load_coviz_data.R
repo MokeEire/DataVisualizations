@@ -107,7 +107,8 @@ covid_pop_df = covid_data %>%
   arrange(country_region, province_state, case_type, date) %>% 
   # Calculate daily cases for each case type at the province/state level
   group_by(country_region, province_state, case_type) %>% 
-  mutate(daily_cases = total_cases - lag(total_cases, default = 0, order_by = date)) %>% 
+  mutate(daily_cases = total_cases - lag(total_cases, default = 0, order_by = date),
+         daily_cases = if_else(daily_cases < 0, 0, daily_cases)) %>% 
   ungroup()
 
 
@@ -117,8 +118,8 @@ covid_country_level = covid_pop_df %>%
   group_by(country_region, date, case_type, pop_total) %>% 
   # Calculate Country level cases for each case type over time
   summarise(total_cases = sum(total_cases, na.rm=T),
-            daily_cases = sum(daily_cases, na.rm=T)) %>% 
-  ungroup() %>% 
+            daily_cases = sum(daily_cases, na.rm=T),
+            .groups = "drop") %>% 
   group_by(country_region, case_type) %>% 
   mutate(
     # Calculate case rates relative to population size
