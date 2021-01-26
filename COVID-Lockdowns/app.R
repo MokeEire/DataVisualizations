@@ -405,13 +405,13 @@ server <- function(input, output) {
     })
     
     output$whole_plot <- renderPlot({
-        case_label = if_else(length(input$case_type) == 3, "All", tolower(str_c(input$case_type, collapse = " & ")))
+        case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
         
         cases_viz() / policy_viz() + 
             plot_layout(heights = c(7,3))+
             plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 15, 10, 60)), 
                             title = str_c(input$country, "'s COVID response"),#"Cough and response", #str_c("Daily COVID-19 cases ", country),
-                            subtitle = str_c("Daily cases, ", case_label, ", (rolling seven-day avg.) and Government lockdown policies"))
+                            subtitle = str_c("Daily cases, ", case_label, ", (rolling seven-day avg.) and the implementation of lockdown policies"))
         
     })
     
