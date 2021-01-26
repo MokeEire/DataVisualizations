@@ -227,8 +227,8 @@ ui <- navbarPage(selected = "National Level",
                         hr(),
                         h4("Sources"),
                         tags$ul(
-                            tags$li(a("JHU CSSE COVID-19 Data", href = "https://github.com/CSSEGISandData/COVID-19")),
-                            tags$li(a("Oxford Covid-19 Government Response Tracker (OxCGRT)", href = "https://github.com/OxCGRT/covid-policy-tracker"))
+                            tags$li("COVID cases - ", a("JHU CSSE COVID-19 Data", href = "https://github.com/CSSEGISandData/COVID-19")),
+                            tags$li("Lockdown policy information - ", a("Oxford Covid-19 Government Response Tracker (OxCGRT)", href = "https://github.com/OxCGRT/covid-policy-tracker"))
                         ),
                         br()
 
