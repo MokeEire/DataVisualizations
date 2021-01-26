@@ -259,10 +259,12 @@ server <- function(input, output) {
     
 
     country_data = reactive({
+        req(input$country)
         covid_country_level[covid_country_level$country_region == input$country & covid_country_level$case_type %in% tolower(input$case_type), ]
     })
     
     lockdown_data = reactive({
+        req(input$case_type)
 
         covid_policies[covid_policies$country_name == input$country & covid_policies$date %in% unique(country_data()$date), ] %>% 
             mutate(
