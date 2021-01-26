@@ -34,7 +34,7 @@ load("covid_country_level.RData")
 global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
 
 global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), by = "1 month")
-case_pal = set_names(viz_colours[c(3,7,6)], unique(covid_country_level$case_type))
+case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
 
 
 policy_dict = c("c1" = "School closing",

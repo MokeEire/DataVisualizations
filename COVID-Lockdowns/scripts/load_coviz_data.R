@@ -147,6 +147,6 @@ global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("202
 
 # Visualization utilities -------------------------------------------------
 
-case_pal = set_names(viz_colours[c(3,7,6)], unique(covid_country_level$case_type))
+case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
 
 
