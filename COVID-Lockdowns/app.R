@@ -118,6 +118,7 @@ ui <- navbarPage(selected = "National Level",
                                      "2 - Require closing (only some levels or categories, e.g. just high school, or just public schools)" = 2,
                                      "3 - Require closing all levels" = 3),
                          selected = 2,
+                         status = "warning"
                      ),
                      awesomeRadio(#ratio = c(4,8), width = "100%",
                          inputId = "c2",
@@ -126,6 +127,7 @@ ui <- navbarPage(selected = "National Level",
                                      "2 - Require closing (or work from home) for some sectors or categories of workers" = 2, 
                                      "3 - Require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors)" = 3),
                          selected = 2,
+                         status = "warning"
                      ),
                      fluidRow(
                          column(6,
@@ -134,7 +136,8 @@ ui <- navbarPage(selected = "National Level",
                                     label = "Cancel public events", 
                                     choices = c("1 - Recommend cancelling" = 1, 
                                                 "2 - Require cancelling" = 2),
-                                    selected = 2
+                                    selected = 2,
+                                    status = "warning"
                                 )
                                 ),
                          column(6,
@@ -143,7 +146,8 @@ ui <- navbarPage(selected = "National Level",
                                     label = "Restrictions on internal movement", 
                                     choices = c("1 - Recommend not to travel between regions/cities" = 1, 
                                                 "2 - Internal movement restrictions in place" = 2),
-                                    selected = 2
+                                    selected = 2,
+                                    status = "warning"
                                 )
                                 )
                      ),
@@ -154,14 +158,16 @@ ui <- navbarPage(selected = "National Level",
                                      "2 - Restrictions on gatherings between 101-1000 people" = 2, 
                                      "3 - Restrictions on gatherings between 11-100 people" = 3,
                                      "4 - Restrictions on gatherings of 10 people or fewer" = 4),
-                         selected = 1
+                         selected = 1,
+                         status = "warning"
                      ),
                      awesomeRadio(#ratio = c(4,8), width = "100%",
                          inputId = "c5",
                          label = "Close public transport", 
                          choices = c("1 - Recommend closing (or significantly reduce volume/route/means of transport available)" = 1, 
                                      "2 - Require closing (or prohibit most citizens from using it)" = 2),
-                         selected = 2
+                         selected = 2,
+                         status = "warning"
                      ),
                      awesomeRadio(#ratio = c(4,8), width = "100%",
                          inputId = "c6",
@@ -169,7 +175,8 @@ ui <- navbarPage(selected = "National Level",
                          choices = c("1 - Recommend not leaving house" = 1, 
                                      "2 - Require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips" = 2, 
                                      "3 - Require not leaving house with minimal exceptions (e.g. allowed to leave once a week, or only one person can leave at a time, etc.)" = 3),
-                         selected = 2
+                         selected = 2,
+                         status = "warning"
                      ),
                      awesomeRadio(#ratio = c(4,8), width = "100%",
                          inputId = "c8",
@@ -178,7 +185,8 @@ ui <- navbarPage(selected = "National Level",
                                      "2 - Quarantine arrivals from some or all regions" = 2, 
                                      "3 - Ban arrivals from some regions" = 3,
                                      "4 - Ban on all regions or total border closure" = 4),
-                         selected = 3
+                         selected = 3,
+                         status = "warning"
                      )
                    ),
                    # Main panel for displaying outputs ----
