@@ -1,3 +1,10 @@
+library(extrafont)
+library(tidyverse)
+library(ggtext)
+library(ggrepel)
+library(reactable)
+library(patchwork)
+
 my_col_pal = str_c("#", 
                    c("f0fafa", # background
                      "051414", # text
