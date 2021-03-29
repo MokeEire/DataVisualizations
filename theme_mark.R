@@ -19,6 +19,7 @@ my_col_pal = str_c("#",
                      "072e25", # dark green
                      "6d435a"  # eggplant
                    )) 
+viz_colours = my_col_pal[-1:-4]
 
 options(reactable.theme = reactableTheme(
   color = my_col_pal[2],
