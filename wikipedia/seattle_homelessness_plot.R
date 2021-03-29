@@ -62,11 +62,12 @@ plot = ggplot(ndat, aes(x=Year, y=Count, fill=Homeless)) +
   scale_fill_manual(values = c("Sheltered" = "#08488C", "Unsheltered" = "#51A9C2"))+
   scale_colour_manual(values = c("Sheltered" = "#08488C", "Unsheltered" = "#51A9C2"))+
   # Labels
-  labs(y = "Homeless Count", x = "",
+  labs(y = "Homeless Count", x = NULL,
        title = "Seattle Homeless Count 2006-2020",
-       subtitle = "Count of sheltered and unsheltered population")+
+       subtitle = "Count of sheltered and unsheltered population",
+       caption = source_caption("US Dept. Housing & Urban Development (HUD)"))+
   # Theme
-  theme_wiki(md=T, plots_pane = F, base_size = 16)+
+  theme_wiki(md=T, plots_pane = F, base_size = 14, plot_margin = margin(0,0,0,0))+
   theme(legend.position = c(.025, 1),
         legend.title = element_blank(),
         legend.justification = c("left", "top"),
@@ -74,6 +75,6 @@ plot = ggplot(ndat, aes(x=Year, y=Count, fill=Homeless)) +
 
 plot
 
-ggsave(plot, file="wikipedia/SeattleHomelessnessBarChart.svg", dev = "svg", width = 16, height = 8)
+ggsave(plot, file="wikipedia/SeattleHomelessnessBarChart.png", dev = "png", width = 12, height = 8)
 
 
