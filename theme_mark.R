@@ -347,8 +347,7 @@ theme_wiki = function(title_family = "Georgia",
         plot.margin = plot_margin,
         plot.caption.position = "plot", 
         plot.caption = ggtext::element_markdown(hjust = 0, 
-                                                colour = line_colour, 
-                                                margin = margin(t = 25, b = 25, l = -20, r = 0)),
+                                                margin = margin(t = 20, b = 0, l = 0, r = 0)),
         # Background
         plot.background = element_rect(fill = bg_colour,
                                        colour = bg_colour),
@@ -412,8 +411,7 @@ theme_wiki = function(title_family = "Georgia",
         # Plot margin and caption
         plot.margin = plot_margin,
         plot.caption.position = "plot", 
-        plot.caption = ggtext::element_markdown(hjust = 0, 
-                                                colour = line_colour),
+        plot.caption = ggtext::element_markdown(hjust = 0),
         
         # Background
         plot.background = element_rect(fill = bg_colour,
@@ -461,8 +459,7 @@ theme_wiki = function(title_family = "Georgia",
         # Plot margin and caption
         plot.margin = plot_margin,
         plot.caption.position = "plot", 
-        plot.caption = element_text(hjust = 0, 
-                                    colour = line_colour),
+        plot.caption = element_text(hjust = 0),
         
         # Background
         plot.background = element_rect(fill = bg_colour,
