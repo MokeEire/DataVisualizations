@@ -13,20 +13,6 @@ library(patchwork)
 here("theme_mark.R") %>% 
   walk(source)
 
-viz_colours = my_col_pal[-1:-4]
-source_caption = function(sources){
-  if(missing(sources)){
-    stop("Need to provide a vector of sources to the sources argument")
-  }
-  
-  str_c(
-    "Source", if(length(sources) > 1){"s"}, ": ",
-    str_c(sources, collapse = "; "),
-    "<br><br>",
-    # "<span style='font-size:12px;color:", my_col_pal[3], 
-    "Visualized by @MokeEire"
-  )
-}
 
 jhu_source = "2019 Novel Coronavirus Data Repository by Johns Hopkins CSSE"
 oxford_source = "Oxford COVID-19 Government Response Tracker, Blavatnik School of Government"
