@@ -178,7 +178,8 @@ theme_mark = function(title_family = "Cabin Condensed",
         # Main elements
         text = element_text(family = text_family,
                             colour = text_colour),
-        title = element_text(family = title_family),
+        title = element_text(family = title_family,
+                             colour = text_colour),
         line = element_line(colour = line_colour),
         panel.grid.major = element_line(colour = grid_colour),
         panel.grid.major.x = element_blank(),
@@ -186,15 +187,19 @@ theme_mark = function(title_family = "Cabin Condensed",
         
         # Plot titles
         plot.title = ggtext::element_markdown(face = "bold",
-                                              lineheight = 1.2),
+                                              lineheight = 1.2,
+                                              hjust = 0),
         plot.title.position = "plot",
-        plot.subtitle = ggtext::element_markdown(lineheight = 1.2),
+        plot.subtitle = ggtext::element_markdown(family = subtitle_family,
+                                                 hjust = 0,
+                                                 lineheight = 1),
         
         # Plot margin and caption
         plot.margin = plot_margin,
         plot.caption.position = "plot", 
         plot.caption = ggtext::element_markdown(hjust = 0, 
-                                                colour = line_colour),
+                                                colour = line_colour, 
+                                                margin = margin(t = 15, b = 0, l = 0, r = 0)),
         
         # Background
         plot.background = element_rect(fill = bg_colour,
@@ -202,6 +207,8 @@ theme_mark = function(title_family = "Cabin Condensed",
         # panel.grid.major = element_line(colour = line_colour),
         
         # Axes
+        axis.text = ggtext::element_markdown(colour = text_colour,
+                                             family = text_family),
         axis.title = ggtext::element_markdown(hjust = 1, 
                                               colour = text_colour,
                                               family = text_family,
@@ -215,8 +222,6 @@ theme_mark = function(title_family = "Cabin Condensed",
                                                       colour = text_colour, 
                                                       family = text_family,
                                                       face = "italic"),
-        axis.text = ggtext::element_markdown(colour = text_colour,
-                                             family = text_family),
         axis.line = element_line(colour = line_colour),
         
         # Legend
