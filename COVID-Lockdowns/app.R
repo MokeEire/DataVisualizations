@@ -255,6 +255,7 @@ ui <- navbarPage(selected = "National Level",
                 "by",
                 img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png", height = "30px"),
                 ".")
+
     )
 )
 
@@ -262,16 +263,8 @@ ui <- navbarPage(selected = "National Level",
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
     
-    # Histogram of the Old Faithful Geyser Data ----
-    # with requested number of bins
-    # This expression that generates a histogram is wrapped in a call
-    # to renderPlot to indicate that:
-    #
-    # 1. It is "reactive" and therefore should be automatically
-    #    re-executed when inputs (input$bins) change
-    # 2. Its output type is a plot
-    
 
+    # Data ----
     country_data = reactive({
         req(input$country)
         covid_country_level[covid_country_level$country_region == input$country & covid_country_level$case_type %in% tolower(input$case_type), ]
