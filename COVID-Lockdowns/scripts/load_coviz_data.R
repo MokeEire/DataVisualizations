@@ -135,7 +135,7 @@ covid_country_level = covid_pop_df %>%
 
 global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
 
-global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), by = "1 month")
+global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), length.out = 7)
 
 
 
@@ -144,4 +144,5 @@ global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("202
 
 case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
 
-
+save(covid_policies, file = "covid_policies.RData")
+save(covid_country_level, file = "covid_country_level.RData")
