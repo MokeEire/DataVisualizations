@@ -304,6 +304,7 @@ server <- function(input, output) {
 
     })
     
+    # Cases viz ----
     cases_viz = reactive({
         multiple_cases = (length(input$case_type) > 1)
         
@@ -353,6 +354,7 @@ server <- function(input, output) {
                   axis.text.y.left = element_text(vjust = 0))
     })
     
+    # Policy viz ----
     policy_viz = reactive({
         lockdown_data() %>% 
             ggplot(., aes(x = date, y = lockdown_val, colour = policy, group = flag))+
@@ -411,7 +413,7 @@ server <- function(input, output) {
             HTML("Visualized by <a href='https://github.com/MokeEire'>@MokeEire</a>")
         )
     })
-    
+    # Combined Plot ----
     output$whole_plot <- renderPlot({
         case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
         
