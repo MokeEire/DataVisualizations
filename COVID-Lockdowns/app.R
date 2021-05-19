@@ -14,6 +14,7 @@
 # system('fc-cache -f ~/.fonts')
 # file.copy("www/FiraSansExtraCondensed-Regular.ttf", "~/.fonts")
 # system('fc-cache -f ~/.fonts')
+# Libraries ----
 library(extrafont)
 library(shiny)
 library(shinydashboard)
@@ -22,208 +23,213 @@ library(shinyWidgets)
 library(tidyverse)
 library(lubridate)
 library(here)
-
-here("scripts", 
-     "theme_mark.R") %>%
-     # c("theme_mark.R", "load_coviz_data.R")) %>%
-    walk(source)
-
-load("covid_policies.RData")
-load("covid_country_level.RData")
-
-global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
-
-global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), by = "1 month")
-case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
-
-
-policy_dict = c("c1" = "School closing",
-                "c2" = "Workplace closing",
-                "c3" = "Cancel public events",
-                "c4" = "Restrictions on gatherings",
-                "c5" = "Close public transport",
-                "c6" = "Stay at home requirements",
-                "c7" = "Restrictions on internal movement",
-                "c8" = "International travel controls")
+library(patchwork)
+library(reactable)
 
 
 
+load_new_data = T
 
-pickerInput2 <- function (inputId, label = NULL, choices, selected = NULL, multiple = FALSE, 
-                          options = list(), choicesOpt = NULL, width = NULL, inline = FALSE, ratio = c(2,10)) 
-{
-    if (ratio[1] + ratio[2] != 12) stop("`ratio` has to add up 12.")
-    choices <- shinyWidgets:::choicesWithNames(choices)
-    selected <- restoreInput(id = inputId, default = selected)
-    if (!is.null(options) && length(options) > 0) 
-        names(options) <- paste("data", names(options), sep = "-")
-    if (!is.null(width)) 
-        options <- c(options, list(`data-width` = width))
-    if (!is.null(width) && width %in% c("fit")) 
-        width <- NULL
-    options <- lapply(options, function(x) {
-        if (identical(x, TRUE)) 
-            "true"
-        else if (identical(x, FALSE)) 
-            "false"
-        else x
-    })
-    maxOptGroup <- options[["data-max-options-group"]]
-    selectTag <- tag("select", shinyWidgets:::dropNulls(options))
-    selectTag <- tagAppendAttributes(tag = selectTag, id = inputId, 
-                                     class = "selectpicker form-control")
-    selectTag <- tagAppendChildren(tag = selectTag, shinyWidgets:::pickerSelectOptions(choices, 
-                                                                                       selected, choicesOpt, maxOptGroup))
-    if (multiple) 
-        selectTag$attribs$multiple <- "multiple"
-    divClass <- "form-group shiny-input-container"
-    labelClass <- "control-label"
-    if (inline) {
-        divClass <- paste(divClass, "form-horizontal")
-        selectTag <- tags$div(class = paste0("col-sm-", ratio[2]), selectTag)
-        labelClass <- paste(labelClass, paste0("col-sm-", ratio[1]))
-    }
-    pickerTag <- tags$div(class = divClass, style = if (!is.null(width)) 
-        paste0("width: ", validateCssUnit(width), ";"), if (!is.null(label)) 
-            tags$label(class = labelClass, `for` = inputId, label), 
-        selectTag)
-    shinyWidgets:::attachShinyWidgetsDep(pickerTag, "picker")
+if(load_new_data){
+    here("scripts",
+         # "theme_mark.R") %>%
+         c("theme_mark.R", "load_coviz_data.R")) %>%
+        walk(source)
+} else {
+    load("covid_policies.RData")
+    load("covid_country_level.RData")
 }
+
+options(reactable.theme = reactableTheme(
+    color = "black",
+    backgroundColor = "transparent",
+    borderColor = my_col_pal[3],
+    stripedColor = my_col_pal[4],
+    highlightColor = my_col_pal[7],
+    style = list(
+        fontFamily = "Fira Sans Extra Condensed, sans-serif",
+        fontSize = "16px",
+        lineHeight = 1.1
+    )
+)
+)
+
+
+
+
+
+
 
 ui <- navbarPage(selected = "National Level",
     theme = "app.css",
 
 
-    # App title ----
     title = "COVID Lockdown Policies",
-    
-    
-               tabPanel("National Level", id = "main",
-                 # Sidebar layout with input and output definitions ----
-                 sidebarLayout(
-                   
-                   # Sidebar panel for inputs ----
-                   sidebarPanel(
-                     
-                     
-
+    # Tab: National Level ----
+    tabPanel("National Level", id = "main",
+             
+             sidebarLayout(
+                 
+                 sidebarPanel(
                      h3("Select which policies to show", style="color: var(--bg-col); margin-top: 0px;"),
-                     
-                     # TODO: Make these sliders somehow
-                     # Policy options
-                     awesomeRadio(
-                         inputId = "c1",
-                         label = "School closure",
-                         choices = c("1 - Recommend closing or all schools open with alterations resulting in significant differences compared to non-COVID-19 operations" = 1,
-                                     "2 - Require closing (only some levels or categories, e.g. just high school, or just public schools)" = 2,
-                                     "3 - Require closing all levels" = 3),
-                         selected = 2,
-                         status = "warning"
-                     ),
-                     awesomeRadio(#ratio = c(4,8), width = "100%",
-                         inputId = "c2",
-                         label = "Workplace closure", 
-                         choices = c("1 - Recommend closing (or recommend work from home)" = 1, 
-                                     "2 - Require closing (or work from home) for some sectors or categories of workers" = 2, 
-                                     "3 - Require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors)" = 3),
-                         selected = 2,
-                         status = "warning"
-                     ),
-                     fluidRow(
-                         column(6,
-                                awesomeRadio(#ratio = c(4,8), width = "100%",
-                                    inputId = "c3",
-                                    label = "Cancel public events", 
-                                    choices = c("1 - Recommend cancelling" = 1, 
-                                                "2 - Require cancelling" = 2),
-                                    selected = 2,
-                                    status = "warning"
-                                )
-                                ),
-                         column(6,
-                                awesomeRadio(#ratio = c(4,8), width = "100%",
-                                    inputId = "c7",
-                                    label = "Restrictions on internal movement", 
-                                    choices = c("1 - Recommend not to travel between regions/cities" = 1, 
-                                                "2 - Internal movement restrictions in place" = 2),
-                                    selected = 2,
-                                    status = "warning"
-                                )
-                                )
-                     ),
-                     awesomeRadio(#ratio = c(4,8), width = "100%",
-                         inputId = "c4",
-                         label = "Restrictions on gatherings", 
-                         choices = c("1 - Restrictions on very large gatherings (the limit is above 1000 people)" = 1, 
-                                     "2 - Restrictions on gatherings between 101-1000 people" = 2, 
-                                     "3 - Restrictions on gatherings between 11-100 people" = 3,
-                                     "4 - Restrictions on gatherings of 10 people or fewer" = 4),
-                         selected = 1,
-                         status = "warning"
-                     ),
-                     awesomeRadio(#ratio = c(4,8), width = "100%",
-                         inputId = "c5",
-                         label = "Close public transport", 
-                         choices = c("1 - Recommend closing (or significantly reduce volume/route/means of transport available)" = 1, 
-                                     "2 - Require closing (or prohibit most citizens from using it)" = 2),
-                         selected = 2,
-                         status = "warning"
-                     ),
-                     awesomeRadio(#ratio = c(4,8), width = "100%",
-                         inputId = "c6",
-                         label = "Stay at home requirements", 
-                         choices = c("1 - Recommend not leaving house" = 1, 
-                                     "2 - Require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips" = 2, 
-                                     "3 - Require not leaving house with minimal exceptions (e.g. allowed to leave once a week, or only one person can leave at a time, etc.)" = 3),
-                         selected = 2,
-                         status = "warning"
-                     ),
-                     awesomeRadio(#ratio = c(4,8), width = "100%",
-                         inputId = "c8",
-                         label = "International travel control", 
-                         choices = c("1 - Screening arrivals" = 1, 
-                                     "2 - Quarantine arrivals from some or all regions" = 2, 
-                                     "3 - Ban arrivals from some regions" = 3,
-                                     "4 - Ban on all regions or total border closure" = 4),
-                         selected = 3,
-                         status = "warning"
-                     )
-                   ),
-                   # Main panel for displaying outputs ----
-                   mainPanel(
-                       fluidRow(
-                           column(4,
-                                  selectizeInput("country", #width = "250px", ratio = c(5,7),
-                                                 label = "Country", choices = sort(unique(covid_policies$country_name)), 
-                                                 selected = "Ireland") %>% 
-                                      tagAppendAttributes(class = 'inline-label')
-                           ) %>% 
-                               tagAppendAttributes(style = 'display:flex; flex-flow: row; flex-shrink:0; flex-grow:1'),
-                           column(4, 
-                                  selectizeInput("case_type", width = "250px", #ratio = c(5,7),
-                                                 label = "Case Type", multiple = T, 
-                                                 choices = c("Confirmed", "Deaths", "Recovered"), selected = "Confirmed") %>% 
-                                      tagAppendAttributes(class = 'inline-label')
-                           ) %>% 
-                               tagAppendAttributes(style = 'display:flex; flex-flow: row; flex-shrink:0; flex-grow:1'),
-                           column(4)
+         
+                 # TODO: Make these sliders somehow
+                 # Policy options
+                 awesomeRadio(
+                     inputId = "c1",
+                     label = "School closure",
+                     choices = c("1 - Recommend closing or all schools open with alterations resulting in significant differences compared to non-COVID-19 operations" = 1,
+                                 "2 - Require closing (only some levels or categories, e.g. just high school, or just public schools)" = 2,
+                                 "3 - Require closing all levels" = 3),
+                     selected = 2,
+                     status = "warning"
+                 ),
+                 awesomeRadio(#ratio = c(4,8), width = "100%",
+                     inputId = "c2",
+                     label = "Workplace closure", 
+                     choices = c("1 - Recommend closing (or recommend work from home)" = 1, 
+                                 "2 - Require closing (or work from home) for some sectors or categories of workers" = 2, 
+                                 "3 - Require closing (or work from home) for all-but-essential workplaces (eg grocery stores, doctors)" = 3),
+                     selected = 2,
+                     status = "warning"
+                 ),
+                 fluidRow(
+                     column(6,
+                            awesomeRadio(#ratio = c(4,8), width = "100%",
+                                inputId = "c3",
+                                label = "Cancel public events", 
+                                choices = c("1 - Recommend cancelling" = 1, 
+                                            "2 - Require cancelling" = 2),
+                                selected = 2,
+                                status = "warning"
+                            )
+                            ),
+                     column(6,
+                            awesomeRadio(#ratio = c(4,8), width = "100%",
+                                inputId = "c7",
+                                label = "Restrictions on internal movement", 
+                                choices = c("1 - Recommend not to travel between regions/cities" = 1, 
+                                            "2 - Internal movement restrictions in place" = 2),
+                                selected = 2,
+                                status = "warning"
+                            )
+                            )
+                 ),
+                 awesomeRadio(#ratio = c(4,8), width = "100%",
+                     inputId = "c4",
+                     label = "Restrictions on gatherings", 
+                     choices = c("1 - Restrictions on very large gatherings (the limit is above 1000 people)" = 1, 
+                                 "2 - Restrictions on gatherings between 101-1000 people" = 2, 
+                                 "3 - Restrictions on gatherings between 11-100 people" = 3,
+                                 "4 - Restrictions on gatherings of 10 people or fewer" = 4),
+                     selected = 1,
+                     status = "warning"
+                 ),
+                 awesomeRadio(#ratio = c(4,8), width = "100%",
+                     inputId = "c5",
+                     label = "Close public transport", 
+                     choices = c("1 - Recommend closing (or significantly reduce volume/route/means of transport available)" = 1, 
+                                 "2 - Require closing (or prohibit most citizens from using it)" = 2),
+                     selected = 2,
+                     status = "warning"
+                 ),
+                 awesomeRadio(#ratio = c(4,8), width = "100%",
+                     inputId = "c6",
+                     label = "Stay at home requirements", 
+                     choices = c("1 - Recommend not leaving house" = 1, 
+                                 "2 - Require not leaving house with exceptions for daily exercise, grocery shopping, and 'essential' trips" = 2, 
+                                 "3 - Require not leaving house with minimal exceptions (e.g. allowed to leave once a week, or only one person can leave at a time, etc.)" = 3),
+                     selected = 2,
+                     status = "warning"
+                 ),
+                 awesomeRadio(#ratio = c(4,8), width = "100%",
+                                inputId = "c8",
+                                label = "International travel control", 
+                                choices = c("1 - Screening arrivals" = 1, 
+                                            "2 - Quarantine arrivals from some or all regions" = 2, 
+                                            "3 - Ban arrivals from some regions" = 3,
+                                            "4 - Ban on all regions or total border closure" = 4),
+                                selected = 3,
+                                status = "warning"
+                 )
+                 
+                 ),
+                 # Main panel  ----
+                 mainPanel(
+                   fluidRow(
+                       column(4,
+                              selectizeInput("country", #width = "250px", ratio = c(5,7),
+                                             label = "Country", choices = sort(unique(covid_policies$country_name)), 
+                                             selected = "Ireland") %>% 
+                                  tagAppendAttributes(class = 'inline-label')
                        ) %>% 
-                           tagAppendAttributes(style = 'display:flex')
-                       ,
-                       fluidRow(style = "overflow:auto;",
-                           # Output: Histogram ----
-                           withSpinner(plotOutput(outputId = "whole_plot", height = "725px"), type = 8, color = viz_colours[2])
-                           
-                       ),
-                       fluidRow(
-                           uiOutput("caption")
-                       )
-                     
-                     
-                     
+                           tagAppendAttributes(style = 'display:flex; flex-flow: row; flex-shrink:0; flex-grow:1'),
+                       column(4, 
+                              selectizeInput("case_type", width = "250px", #ratio = c(5,7),
+                                             label = "Case Type", multiple = T, 
+                                             choices = c("Confirmed", "Deaths", "Recovered"), selected = "Confirmed") %>% 
+                                  tagAppendAttributes(class = 'inline-label')
+                       ) %>% 
+                           tagAppendAttributes(style = 'display:flex; flex-flow: row; flex-shrink:0; flex-grow:1'),
+                       column(4)
+                   ) %>% 
+                       tagAppendAttributes(style = 'display:flex')
+                   ,
+                   uiOutput("plot_header"),
+                   
+                   fluidRow(style = "overflow:auto;",
+                       
+                            column(width = 9, style = "padding:0;",
+                                   withSpinner(plotOutput(outputId = "cases_viz", width = "100%", height = "507px"), type = 8, color = viz_colours[2]),
+                                   withSpinner(plotOutput(outputId = "policy_viz", width = "100%", height = "218px"), type = 8, color = viz_colours[2])
+                            ),
+                            column(width = 2, style = "position:relative; top: 507px;padding:0;width:18%;",
+                                   # plotOutput(outputId = "policy_viz_text", height = "210px")
+                                   HTML('<div class="callout">
+                                            <div class="calloutHeading">Policy scope</div>
+                                                <div class="calloutMessage">
+                                                    <div class="row" style="
+                                                        display: flex;
+                                                        flex-flow: row;
+                                                        margin: 0;
+                                                        width: 100%;
+                                                        align-items: baseline;">
+                                                    <p>Targeted</p><span style="font-weight: 700;
+                                                        font-size: 1.75rem;
+                                                        margin-left: auto;
+                                                        margin-right: 12%;
+                                                    ">--</span>
+                                                    </div>
+                                                    <div class="row" style="
+                                                        display: flex;
+                                                        flex-flow: row;
+                                                        margin: 0;
+                                                        width: 100%;
+                                                        align-items: baseline;
+                                                    ">
+                                                    <p>National</p><span style="font-weight: 700;
+                                                        display: flex;
+                                                        line-height: 0;
+                                                        /* padding: 11px; */
+                                                        transform: translate(2px, 9px);
+                                                        font-size: 4.5rem;
+                                                        margin-left: auto;
+                                                        margin-right: 12%;">-</span>
+                                                </div> 
+                                                </div> 
+                                            
+                                          </div>'),
+                                   reactableOutput(outputId = "policy_viz_rt", height = "210px")
+                            )
+                       
+                   ),
+                   fluidRow(
+                       uiOutput("caption")
                    )
-               )
-    ),
+                   )
+                 )
+             ),
+    # Tab: About
     tabPanel("About", id = "about", fluid = TRUE, #icon = "info-circle",
              fluidRow(
                  column(6,
