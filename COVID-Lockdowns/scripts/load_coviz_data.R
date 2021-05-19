@@ -124,11 +124,6 @@ covid_country_level = covid_pop_df %>%
             .groups = "drop") %>% 
   group_by(country_region, case_type) %>% 
   mutate(
-    # Calculate case rates relative to population size
-    total_cases_proportion = total_cases/pop_total,
-    total_cases_per_100k = total_cases_proportion*100000,
-    daily_cases_proportion = daily_cases/pop_total,
-    daily_cases_per_100k = daily_cases_proportion*100000,
     # Calculate rolling 7 day average for daily cases;
     # Right align means on a given day, calculate the average of the past 7 days (inclusive)
     roll_avg_7day = zoo::rollmean(daily_cases, k = 7, fill = NA, align = "right")
