@@ -418,10 +418,71 @@ server <- function(input, output) {
         
         cases_viz() / policy_viz() + 
             plot_layout(heights = c(7,3))+
-            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 15, 10, 60)), 
-                            title = str_c(input$country, "'s COVID response"),#"Cough and response", #str_c("Daily COVID-19 cases ", country),
-                            subtitle = str_c("Daily cases, ", case_label, ", (rolling seven-day avg.) and the implementation of lockdown policies"))
+            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 15, 10, 60)))
         
+    })
+    
+    output$plot_header = renderUI({
+        case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
+        
+        div(class = "tbl-header",
+            h3(str_c(input$country, "'s COVID response"), class = "tbl-title"),
+            h4(str_c("Daily cases, ", case_label, ", (rolling seven-day avg.) and the implementation of lockdown policies"),
+               class = "tbl-subtitle")
+        )
+    })
+    
+    output$cases_viz = renderPlot({
+        case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
+        
+        cases_viz()+
+            scale_x_date(breaks = scales::breaks_pretty(n = 9), 
+                         labels = scales::label_date_short(format = c("%Y", "%b")),
+                         position = "top",
+                         limits = c(ymd("2020-02-01"), max(lockdown_data()$date)+1))+
+            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 5, 0, 0)))
+    })
+    
+    output$policy_viz = renderPlot({
+        policy_viz()+
+            scale_x_date(breaks = scales::breaks_pretty(n = 12), 
+                         labels = scales::label_date_short(format = c("%Y", "%b")), 
+                         position = "bottom",
+                         limits = c(ymd("2020-02-01"), max(lockdown_data()$date)+1))+
+            theme(strip.text.y.right = element_blank(), legend.position = "none", 
+                  axis.text.y.left = element_text(colour = my_col_pal[1]))+
+            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(0, 5, 10, 0)))
+    })
+    
+    output$policy_viz_text = renderPlot({
+        policy_viz()+
+            scale_x_date(limits = c(today(), today()))+
+            theme(legend.position = "none",
+                  axis.text.x.bottom = element_blank(), panel.grid.major.x = element_blank())+
+            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(0, 15, 10, 60)))
+    }, execOnResize = T)
+    
+    output$policy_viz_rt = renderReactable({
+        tibble(policy = levels(lockdown_data()$policy)) %>% 
+            reactable(
+                sortable = F, 
+                resizable = F, 
+                filterable = F, 
+                searchable = F, 
+                pagination = F, 
+                borderless = T, 
+                highlight = F, 
+                wrap = F,
+                compact = T, 
+                defaultColDef = colDef(
+                    header = "", 
+                    headerStyle = list(display = "none"),
+                    style = list(
+                        padding = "2px 2px",
+                        background = "transparent"
+                    )
+                    )
+                )
     })
     
     
