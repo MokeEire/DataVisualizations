@@ -413,14 +413,14 @@ server <- function(input, output) {
         )
     })
     # Combined Plot ----
-    output$whole_plot <- renderPlot({
-        case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
-        
-        cases_viz() / policy_viz() + 
-            plot_layout(heights = c(7,3))+
-            plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 15, 10, 60)))
-        
-    })
+    # output$whole_plot <- renderPlot({
+    #     case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
+    #     
+    #     cases_viz() / policy_viz() + 
+    #         plot_layout(heights = c(7,3))+
+    #         plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 15, 10, 60)))
+    #     
+    # })
     
     output$plot_header = renderUI({
         case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
