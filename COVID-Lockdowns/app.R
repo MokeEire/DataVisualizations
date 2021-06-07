@@ -266,14 +266,14 @@ server <- function(input, output) {
 
     # Data ----
     country_data = reactive({
-        req(input$country)
+        req(input$case_type)
         covid_country_level[covid_country_level$country_region == input$country & covid_country_level$case_type %in% tolower(input$case_type), ]
     })
     
     lockdown_data = reactive({
-        req(input$case_type)
+        req(input$country)
 
-        covid_policies[covid_policies$country_name == input$country & covid_policies$date %in% unique(country_data()$date), ] %>% 
+        covid_policies[covid_policies$country_name == input$country & covid_policies$date %in% unique(covid_country_level$date), ] %>% 
             mutate(
                 # Create boolean values for whether a lockdown was enacted
                 c1_lockdown = (c1_response >= input$c1),
@@ -439,7 +439,7 @@ server <- function(input, output) {
             scale_x_date(breaks = scales::breaks_pretty(n = 9), 
                          labels = scales::label_date_short(format = c("%Y", "%b")),
                          position = "top",
-                         limits = c(ymd("2020-02-01"), max(lockdown_data()$date)+1))+
+                         limits = c(ymd("2020-02-01"), max(country_data()$date)+1))+
             plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 5, 0, 0)))
     })
     
