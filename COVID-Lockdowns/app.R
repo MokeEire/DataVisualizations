@@ -28,7 +28,7 @@ library(reactable)
 
 
 
-load_new_data = T
+load_new_data = F
 
 if(load_new_data){
     here("scripts",
@@ -36,8 +36,22 @@ if(load_new_data){
          c("theme_mark.R", "load_coviz_data.R")) %>%
         walk(source)
 } else {
+    source(here("scripts", "theme_mark.R"))
+    
+    policy_dict = c("c1" = "School closing",
+                    "c2" = "Workplace closing",
+                    "c3" = "Cancel public events",
+                    "c4" = "Restrictions on gatherings",
+                    "c5" = "Close public transport",
+                    "c6" = "Stay at home requirements",
+                    "c7" = "Restrictions on internal movement",
+                    "c8" = "International travel controls")
+    
     load("covid_policies.RData")
     load("covid_country_level.RData")
+    
+    case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
+    
 }
 
 options(reactable.theme = reactableTheme(
