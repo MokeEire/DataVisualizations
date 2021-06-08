@@ -95,12 +95,12 @@ label {
 
 .inline-label {
   display: inline-flex;
-  width: 100% !important;
 }
 
 .shiny-input-container:not(.shiny-input-container-inline) {
   align-items: center;
-  margin-bottom: 10px;
+  margin-top: 10px;
+  margin-bottom: 0;
 }
 
 .form-control.selectize-control {
