@@ -185,3 +185,36 @@ label[for='case_type-selectized']{
   font-size: 3rem;
   margin-top: 0;
 }
+
+
+.policy-box, .btn-policy + .sw-dropdown-content > .sw-dropdown-in {
+  background-color: var(--skobeloff);
+  padding: 8px 14px;
+  box-shadow: 0px 0px 15px 0px #c0c0c0;
+  margin-top: 10px;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.sw-dropdown {
+  margin-top: 5px;
+}
+
+
+.sw-dropdown-content {
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+.btn-policy {
+  border: none;
+  background: none;
+  text-decoration: underline 2px solid;
+  line-height: inherit;
+  padding: 0;
+}
+
+.btn-policy > .glyphicon {
+  display: none;
+}
