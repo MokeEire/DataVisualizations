@@ -213,14 +213,13 @@ ui <- navbarPage(selected = "National Level",
              )
              
     ),
-    fluidRow(style = "overflow:auto;display:flex;justify-content:center;",
+    fluidRow(style = "display:flex;justify-content:center;",
              column(width = 9, #style = "padding:0;",
                     withSpinner(plotOutput(outputId = "policy_viz", width = "100%", height = "auto"), #, height = "218px"
                                 type = 8, color = viz_colours[2], hide.ui = F)
              ),
-             column(width = 3,
-                    reactableOutput(outputId = "policy_viz_rt", height = "auto")
-             )
+             # Policies -----
+             uiOutput("policy_dropdowns", class = "col-sm-3")
     ),
     uiOutput("caption")
 )
