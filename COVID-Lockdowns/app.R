@@ -79,6 +79,20 @@ ui <- navbarPage(selected = "National Level",
 
 
     title = "COVID Lockdown Policies",
+    tags$script('
+                                var dimension = [0, 0];
+                                $(document).on("shiny:connected", function(e) {
+                                    dimension[0] = window.innerWidth;
+                                    dimension[1] = window.innerHeight;
+                                    Shiny.onInputChange("dimension", dimension);
+                                });
+                                $(window).resize(function(e) {
+                                    dimension[0] = window.innerWidth;
+                                    dimension[1] = window.innerHeight;
+                                    Shiny.onInputChange("dimension", dimension);
+                                });
+                            '),
+    
     # Tab: National Level ----
     tabPanel("National Level", id = "main",
              
@@ -439,6 +453,11 @@ server <- function(input, output) {
         )
     })
     
+    cases_height = reactive({
+        req(input$dimension)
+        input$dimension[2]*.4
+    }, label = "cases_height") %>% throttle(1000)
+    
     output$cases_viz = renderPlot({
         case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
         
@@ -448,7 +467,12 @@ server <- function(input, output) {
                          position = "top",
                          limits = c(ymd("2020-02-01"), max(country_data()$date)+1))+
             plot_annotation(theme = theme_mark(md=T, plot_margin = margin(10, 5, 0, 0)))
-    })
+    }, height = function(){cases_height()})
+    
+    policy_height = reactive({
+        req(input$dimension)
+        input$dimension[2]*.25
+    }) %>% throttle(1000)
     
     output$policy_viz = renderPlot({
         policy_viz()+
@@ -459,7 +483,7 @@ server <- function(input, output) {
             theme(strip.text.y.right = element_blank(), legend.position = "none", 
                   axis.text.y.left = element_text(colour = my_col_pal[1]))+
             plot_annotation(theme = theme_mark(md=T, plot_margin = margin(0, 5, 10, 0)))
-    })
+    }, height = function(){policy_height()})
     
     output$policy_viz_text = renderPlot({
         policy_viz()+
@@ -479,8 +503,8 @@ server <- function(input, output) {
                 pagination = F, 
                 borderless = T, 
                 highlight = F, 
-                wrap = F,
-                compact = T, 
+                wrap = F, 
+                height = policy_height(), style = list(lineHeight = ((policy_height()/8)/16)-.6),
                 defaultColDef = colDef(
                     header = "", 
                     headerStyle = list(display = "none"),
@@ -488,8 +512,8 @@ server <- function(input, output) {
                         padding = "2px 2px",
                         background = "transparent"
                     )
-                    )
                 )
+            )
     })
     
     
