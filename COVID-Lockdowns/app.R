@@ -392,7 +392,7 @@ server <- function(input, output) {
     
     cases_height = reactive({
         req(input$dimension)
-        input$dimension[2]*.4
+        input$dimension[2]*.49
     }, label = "cases_height") %>% throttle(1000)
     
     output$cases_viz = renderPlot({
@@ -408,7 +408,7 @@ server <- function(input, output) {
     
     policy_height = reactive({
         req(input$dimension)
-        input$dimension[2]*.25
+        input$dimension[2]*.34
     }) %>% throttle(1000)
     
     output$policy_viz = renderPlot({
