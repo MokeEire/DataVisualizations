@@ -314,27 +314,24 @@ server <- function(input, output) {
                    # Add factor labels to flag and make policy a factor
                    lockdown_val = na_if(lockdown*as.numeric(policy), 0)) %>% 
             replace_na(list(flag = "National"))
-
+        
     })
     
     # Cases viz ----
     cases_viz = reactive({
         multiple_cases = (length(input$case_type) > 1)
         
-            
+        
         plot = country_data() %>% 
             # Plot
-        ggplot(., aes(x = date, y = roll_avg_7day, fill = case_type))+
+            ggplot(., aes(x = date, y = roll_avg_7day, fill = case_type))+
             # Geom
             geom_area(alpha = .85, colour = my_col_pal[3], position = "identity")+
             # Axes
-            scale_x_date(breaks = global_date_ticks, 
-                         date_labels = "%b", 
-                         position = "top")+
             scale_y_continuous(breaks = scales::pretty_breaks(), 
                                labels = scales::comma, 
                                position = "left", expand = expansion(add = c(0,50)))
-
+        
         if(multiple_cases){
             plot = plot+
                 scale_fill_manual(values = case_pal, labels = str_to_title, name = "Case Type",
@@ -373,10 +370,6 @@ server <- function(input, output) {
             ggplot(., aes(x = date, y = lockdown_val, colour = policy, group = flag))+
             # Geom
             geom_line(aes(linetype = flag, size = flag), alpha = .95)+
-            # Axes
-            scale_x_date(breaks = global_date_ticks, 
-                         date_labels = "%b", 
-                         position = "bottom")+
             # Colour, linetype, size
             scale_colour_manual(values = viz_colours, na.value = my_col_pal[1], 
                                 name = NULL, guide = guide_none())+
