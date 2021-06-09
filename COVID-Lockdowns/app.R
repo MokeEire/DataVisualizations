@@ -74,12 +74,20 @@ options(reactable.theme = reactableTheme(
 
 
 
-ui <- navbarPage(selected = "National Level",
+ui <- fluidPage(title = "COVID Lockdown Policies",
     theme = "app.css",
 
 
-    title = "COVID Lockdown Policies",
-    tags$script('
+    fluidRow(
+    # div(class = "container-fluid",
+        h4(class = "navbar-brand", "COVID Lockdown Policies")
+            # )
+        ),
+    
+    # Filters -----
+    fluidRow(style = 'display:flex; flex-flow:row; justify-content: space-around; max-width:80%;',
+        
+        tags$script('
                                 var dimension = [0, 0];
                                 $(document).on("shiny:connected", function(e) {
                                     dimension[0] = window.innerWidth;
