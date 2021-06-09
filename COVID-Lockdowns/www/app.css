@@ -117,14 +117,19 @@ label[for='country-selectized']{
 
 label[for='case_type-selectized']{
   color: var(--font-col);
+  white-space: nowrap;
 }
 
+
 .callout {
-    position: absolute;
+    
+    /*position: absolute;
     top: -55%;
-    left: 0;
-    z-index: 999;
     margin-left: 5px;
+    left: 0;*/
+    align-self: flex-end;
+    margin-bottom:10px;
+    z-index: 2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
