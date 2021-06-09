@@ -7,7 +7,7 @@ library(janitor)
 
 folder_url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
 
-files = c("confirmed", "recovered", "deaths")
+files = c("confirmed", "deaths")
 
 
 # Because each file is in the folder, paste together the filenames
@@ -34,7 +34,7 @@ covid_data = imap_dfr(case_urls,
                                                                 "Saint Kitts and Nevis" = "St. Kitts and Nevis",
                                                                 "Taiwan\\*" = "Taiwan")),
          # Make case_type a factor to bring deaths geom to front
-         case_type = factor(case_type, levels = c("confirmed", "recovered", "deaths", ordered = T)))
+         case_type = factor(case_type, levels = c("confirmed", "deaths", ordered = T)))
 
 
 # World Population Data ---------------------------------------------------
@@ -142,7 +142,7 @@ global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("202
 
 # Visualization utilities -------------------------------------------------
 
-case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
+case_pal = set_names(viz_colours[c(3,7)], unique(covid_country_level$case_type))
 
 save(covid_policies, file = "covid_policies.RData")
 save(covid_country_level, file = "covid_country_level.RData")
