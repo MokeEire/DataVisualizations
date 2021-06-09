@@ -186,24 +186,40 @@ ui <- fluidPage(title = "COVID Lockdown Policies",
                                                 </div> 
                                                 </div> 
                                             
-                                          </div>')#,
+                                          </div>'),
+                    h4("Select policy severity")#,
                     # reactableOutput(outputId = "policy_viz_rt", height = "auto")#, height = "210px")
              )
              
     ),
+    
+    # Policy row -----
     fluidRow(style = "display:flex;justify-content:center;",
-             column(width = 9, #style = "padding:0;",
+             column(width = 8, offset = 1, #style = "padding:0;",
                     withSpinner(plotOutput(outputId = "policy_viz", width = "100%", height = "auto"), #, height = "218px"
                                 type = 8, color = viz_colours[2], hide.ui = F)
              ),
-             # Policies -----
-             uiOutput("policy_dropdowns", class = "col-sm-3")
+             column(3,
+                    fluidRow(style = "display: flex;flex-flow: row;flex-wrap: nowrap;justify-content: center;",
+                        column(3,style = "padding-right:0;",
+                               uiOutput("circles")#, class = "policy-circles"),
+                        ),
+                        column(9, style = "padding-left:0;",
+                               uiOutput("policy_dropdowns")#, class = "col-sm-3"))
+                        )
+                    )
+                    )
+             
     ),
     uiOutput("caption")
 )
 
 
-# Define server logic required to draw a histogram ----
+
+
+
+
+
 server <- function(input, output) {
     
 
@@ -431,11 +447,118 @@ server <- function(input, output) {
             )
     })
     
-    output$policy_dropdowns = renderUI({
-        div(style = str_c("line-height:", ((policy_height()/8)/16)-.6, ";width:90%;"),
+    output$circles = renderUI({
+        if(class(need(input$c1, label = "C1")) == "character"){
+            div(class = "policy-circles",
+                div(class = "circles-row", style = str_c("color:", viz_colours[1]),
+                    reduce(flatten(list(rerun(2, icon("circle")),
+                                        rerun(max(covid_policies$c1_response, na.rm=T) - 2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[2]),
+                    reduce(flatten(list(rerun(2, icon("circle")),
+                                        rerun(max(covid_policies$c2_response, na.rm=T) - 2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",style = str_c("color:", viz_colours[3]),
+                    reduce(flatten(list(rerun(2, icon("circle")),
+                                        rerun(max(covid_policies$c3_response, na.rm=T) - 2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",style = str_c("color:", viz_colours[4]),
+                    reduce(flatten(list(rerun(1, icon("circle")),
+                                        rerun(max(covid_policies$c4_response, na.rm=T) - 1, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",style = str_c("color:", viz_colours[5]),
+                    reduce(flatten(list(rerun(2, icon("circle")),
+                                        rerun(max(covid_policies$c5_response, na.rm=T) - 2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",style = str_c("color:", viz_colours[6]),
+                    reduce(flatten(list(rerun(2, icon("circle")),
+                                        rerun(max(covid_policies$c6_response, na.rm=T) - 2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",style = str_c("color:", viz_colours[7]),
+                    reduce(flatten(list(rerun(2, icon("circle")),
+                                        rerun(max(covid_policies$c7_response, na.rm=T) - 2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",
+                    reduce(flatten(list(rerun(3, icon("circle")),style = str_c("color:", viz_colours[8]),
+                                        rerun(max(covid_policies$c8_response, na.rm=T) - 3, icon("circle-o")))), paste) %>% 
+                        HTML()
+                )
+            ) %>% 
+                tagAppendAttributes(style = str_c("line-height:", round(((policy_height()/8)/16)-.65, 2)))
+            
+        } else {
+            policy_inputs = list(
+                c1 = input$c1,
+                c2 = input$c2,
+                c3 = input$c3,
+                c4 = input$c4,
+                c5 = input$c5,
+                c6 = input$c6,
+                c7 = input$c7,
+                c8 = input$c8
+            ) %>% 
+                map(as.numeric)
+            
+            div(class = "policy-circles",
+                div(class = "circles-row", style = str_c("color:", viz_colours[1]),
+                    reduce(flatten(list(rerun(policy_inputs$c1, icon("circle")),
+                                        rerun(max(covid_policies$c1_response, na.rm=T) - policy_inputs$c1, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row",style = str_c("color:", viz_colours[2]),
+                    reduce(flatten(list(rerun(policy_inputs$c2, icon("circle")),
+                                        rerun(max(covid_policies$c2_response, na.rm=T) - policy_inputs$c2, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[3]),
+                    reduce(flatten(list(rerun(policy_inputs$c3, icon("circle")),
+                                        rerun(max(covid_policies$c3_response, na.rm=T) - policy_inputs$c3, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[4]),
+                    reduce(flatten(list(rerun(policy_inputs$c4, icon("circle")),
+                                        rerun(max(covid_policies$c4_response, na.rm=T) - policy_inputs$c4, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[5]),
+                    reduce(flatten(list(rerun(policy_inputs$c5, icon("circle")),
+                                        rerun(max(covid_policies$c5_response, na.rm=T) - policy_inputs$c5, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[6]),
+                    reduce(flatten(list(rerun(policy_inputs$c6, icon("circle")),
+                                        rerun(max(covid_policies$c6_response, na.rm=T) - policy_inputs$c6, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[7]),
+                    reduce(flatten(list(rerun(policy_inputs$c7, icon("circle")),
+                                        rerun(max(covid_policies$c7_response, na.rm=T) - policy_inputs$c7, icon("circle-o")))), paste) %>% 
+                        HTML()
+                ),
+                div(class = "circles-row", style = str_c("color:", viz_colours[8]),
+                    reduce(flatten(list(rerun(policy_inputs$c8, icon("circle")),
+                                        rerun(max(covid_policies$c8_response, na.rm=T) - policy_inputs$c8, icon("circle-o")))), paste) %>% 
+                        HTML()
+                )
+            ) %>% 
+                tagAppendAttributes(style = str_c("line-height:", round(((policy_height()/8)/16)-.65, 2)))
+        }
+        
+        
+    })
+    
+    output$policy_dropdowns = renderUI({ 
+        div(style = str_c("line-height:", round(((policy_height()/8)/16)-.65, 2), ";width:90%;"),
                # reactableOutput(outputId = "policy_viz_rt", height = "auto")
-               dropdown(label = "School closing", circle = F, icon = icon("graduation-cap"), status = "policy",
-                        margin = "0",
+            dropdown(label = "School closing", circle = F, icon = icon("graduation-cap"), status = "policy",
+                        margin = "0", 
                         awesomeRadio(
                             inputId = "c1",
                             label = NULL, #"School closure",
