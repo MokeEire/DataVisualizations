@@ -50,7 +50,7 @@ if(load_new_data){
     load("covid_policies.RData")
     load("covid_country_level.RData")
     
-    case_pal = set_names(viz_colours[c(3,6,7)], unique(covid_country_level$case_type))
+    case_pal = set_names(viz_colours[c(3,7)], unique(covid_country_level$case_type))
     
 }
 
