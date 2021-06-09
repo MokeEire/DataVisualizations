@@ -191,8 +191,8 @@ label[for='case_type-selectized']{
   background-color: var(--skobeloff);
   padding: 8px 14px;
   box-shadow: 0px 0px 15px 0px #c0c0c0;
-  margin-top: 10px;
   border-radius: 10px;
+  margin: 0;
   line-height: 1.5;
 }
 
@@ -217,4 +217,20 @@ label[for='case_type-selectized']{
 
 .btn-policy > .glyphicon {
   display: none;
+}
+
+.policy-circles {
+    display: flex;
+    flex-flow: column;
+    margin: 5px 10px;
+    padding: 0px 5px;
+    white-space: nowrap;
+}
+
+.circles-row {
+  margin-top: 5px;
+}
+
+.fa-circle, .fa-circle-o {
+  line-height: inherit;
 }
