@@ -386,7 +386,7 @@ server <- function(input, output) {
     
     cases_height = reactive({
         req(input$dimension)
-        input$dimension[2]*.49
+        input$dimension[2]*.45
     }, label = "cases_height") %>% throttle(1000)
     
     output$cases_viz = renderPlot({
@@ -402,7 +402,7 @@ server <- function(input, output) {
     
     policy_height = reactive({
         req(input$dimension)
-        input$dimension[2]*.34
+        input$dimension[2]*.3
     }) %>% throttle(1000)
     
     output$policy_viz = renderPlot({
@@ -435,7 +435,7 @@ server <- function(input, output) {
                 borderless = T, 
                 highlight = F, 
                 wrap = F, 
-                height = policy_height(), style = list(lineHeight = ((policy_height()/8)/16)-.6),
+                height = policy_height(), style = list(lineHeight = round(((policy_height()/8)/16)-.65, 2)),
                 defaultColDef = colDef(
                     header = "", 
                     headerStyle = list(display = "none"),
