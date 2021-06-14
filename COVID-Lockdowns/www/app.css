@@ -215,7 +215,10 @@ label[for='case_type-selectized']{
 .btn-policy {
   border: none;
   background: none;
-  text-decoration: underline 2px solid;
+  /*text-decoration: underline 2px solid;*/
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+  border-radius: 0px;
   line-height: inherit;
   padding: 0;
 }
