@@ -100,35 +100,50 @@ ui <- fluidPage(title = "COVID Lockdown Policies",
                                     Shiny.onInputChange("dimension", dimension);
                                 });
                             '),
-        column(width = 3, offset = 2,
+        column(width = 3, 
                selectizeInput("country", #width = "250px", ratio = c(5,7),
                               label = "Country", choices = sort(unique(covid_policies$country_name)), 
                               selected = "Ireland") %>% 
                    tagAppendAttributes(class = 'inline-label')
                ),
-        column(width = 3, offset = 1,
+        column(width = 3, 
                selectizeInput("case_type", width = "250px", #ratio = c(5,7),
                               label = "Case Type", multiple = T, 
                               choices = c("Confirmed", "Deaths"), selected = "Confirmed") %>% 
                    tagAppendAttributes(class = 'inline-label')
                ),
-        column(width = 3, offset = 1, style = "align-self:center;",
+        column(width = 2, style = "align-self:center;",
                dropdownButton(width = "500px", right = T,circle = F, icon = icon("info-circle"), label = "About", 
                               h4("About the Project"),
-                              p("The purpose of this project is to enable an exploration of the timeline of COVID cases and varying degree of government containment policies (\"lockdowns\") used to slow the spread of the virus. I saw a common sentiment that the lockdowns were putting a massive burden on populations while failing to actually slow transmission rates. This is an interesting question because it seems intuitive that lockdowns would have some kind of diminishing effect on transmission rates, but I had no prior knowledge of the effectiveness of containment policies. At the same time, whether lockdowns were ", em(strong("worth")), " the costs imposed on people is also an important question and one of the first steps in answering this is evaluating the potential benefits of lockdowns."),
-                              p("Naturally we can't draw any causal relationships from these visualizations alone i.e. ", 
-                                strong("they won't tell you if closing schools stops the spread of COVID"), ".  If you look at a few different countries, you'll notice that the effects of introducing or lifting policies vary by country, time period, and a whole host of other factors. At the same time, you might be able to find some patterns worth investigating further. You can find the source code, and leave any comments/suggestions,", a(" on github", href = "https://github.com/MokeEire/DataVisualizations/tree/master/COVID-Lockdowns", target = "_blank"), "."),
-                              hr(),
+                              p("Explore how and when countries implemented containment policies (\"lockdowns\") over the course of the COVID-19 pandemic ",
+                                "and compare the timing of these policies with the reported COVID cases and deaths."),
+                              p("COVID case rates are ", strong("not"), " the true number of COVID cases or deaths. ",
+                                "In fact, the Economist has estimated the death toll to be",  
+                                a("2-4 times greater than official data", 
+                                  href = "https://www.economist.com/briefing/2021/05/15/there-have-been-7m-13m-excess-deaths-worldwide-during-the-pandemic", target = "_blank"),
+                                ". So any interpretations from this data should be taken not only with a few grains of salt, but also with the understanding that the changes in COVID cases in response to the same policy will not be consistent across countries."),
+                              p(" In any case, this visualization does not isolate the effects of individual policies, but rather gives a broader picture of how countries responded to this world-changing crisis."),
+                              h4("Understanding the lockdown timeline"),
+                              p("Each line on the lockdown timeline represents a given category (e.g. school closures). A policy is considered ", 
+                                em("active"), " when a country is implementing a policy ", strong("at least as strict"), " as the policy selected with the policy dropdown buttons."),
+                              p("e.g. If you want to see when a country ", 
+                                strong("(1) Recommended closing"), 
+                                " workplaces, the policy will show up when the country ", 
+                                strong("(2) Required closing workplaces for some sectors"), " too."),
+                              # p("The purpose of this project is to enable an exploration of the timeline of COVID cases and varying degree of government containment policies (\"lockdowns\") used to slow the spread of the virus. I saw a common sentiment that the lockdowns were putting a massive burden on populations while failing to actually slow transmission rates. This is an interesting question because it seems intuitive that lockdowns would have some kind of diminishing effect on transmission rates, but I had no prior knowledge of the effectiveness of containment policies. At the same time, whether lockdowns were ", em(strong("worth")), " the costs imposed on people is also an important question and one of the first steps in answering this is evaluating the potential benefits of lockdowns."),
+                              # p("Naturally we can't draw any causal relationships from these visualizations alone i.e. ", 
+                              #   strong("they won't tell you if closing schools stops the spread of COVID"), ".  If you look at a few different countries, you'll notice that the effects of introducing or lifting policies vary by country, time period, and a whole host of other factors. At the same time, you might be able to find some patterns worth investigating further. You can find the source code, and leave any comments/suggestions,", a(" on github", href = "https://github.com/MokeEire/DataVisualizations/tree/master/COVID-Lockdowns", target = "_blank"), "."),
+                              hr(style = "margin: 10px 0;"),
                               h4("Sources"),
                               tags$ul(
                                   tags$li("COVID cases - ", a("JHU CSSE COVID-19 Data", href = "https://github.com/CSSEGISandData/COVID-19", target = "_blank")),
                                   tags$li("Lockdown policy information - ", a("Oxford Covid-19 Government Response Tracker (OxCGRT)", href = "https://github.com/OxCGRT/covid-policy-tracker", target = "_blank"))
                               ),
-                              h4("Built with",
-                                 img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "30px"),
+                              p("Built with",
+                                 a(img(src = "shiny.png", height = "30px"), href = "https://shiny.rstudio.com/", target = "_blank"),
                                  "by",
-                                 img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png", height = "30px"),
-                                 ".")
+                                 a(img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png", height = "30px"), href = "https://www.rstudio.com/", target = "_blank"),
+                                 ".", style = "text-align: right;")
                )
                )
 
