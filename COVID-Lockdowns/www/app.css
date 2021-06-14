@@ -234,6 +234,9 @@ label[for='case_type-selectized']{
 
 .circles-row {
   margin-top: 5px;
+  display: flex;
+  justify-content: flex-end;
+  align-content: center;
 }
 
 .fa-circle, .fa-circle-o {
