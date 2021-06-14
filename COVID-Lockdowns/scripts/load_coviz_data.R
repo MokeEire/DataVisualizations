@@ -1,6 +1,7 @@
 library(tidyverse)
 library(lubridate)
 library(janitor)
+library(data.table)
 
 # COVID Case Data ---------------------------------------------------------
 
@@ -18,7 +19,8 @@ case_urls = str_c(folder_url,
   set_names(files)
 
 covid_data = imap_dfr(case_urls, 
-                      ~read_csv(file = .x), 
+                      # ~read_csv(file = .x), 
+                      ~fread(.x),
                       .id = "case_type") %>% 
   select(`Province/State`, `Country/Region`, case_type, everything()) %>% 
   # Remove cruise ships
@@ -34,13 +36,15 @@ covid_data = imap_dfr(case_urls,
                                                                 "Saint Kitts and Nevis" = "St. Kitts and Nevis",
                                                                 "Taiwan\\*" = "Taiwan")),
          # Make case_type a factor to bring deaths geom to front
-         case_type = factor(case_type, levels = c("confirmed", "deaths", ordered = T)))
+         case_type = factor(case_type, levels = c("confirmed", "deaths", ordered = T))) %>% 
+  group_by(`Country/Region`, case_type) %>% 
+  summarise(across(matches("20|21"), sum), .groups = "drop")
 
 
 # World Population Data ---------------------------------------------------
 
 # UN Population data - https://population.un.org/wpp/Download/Standard/CSV/
-un_pop = read_csv("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
+un_pop = fread("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
 
 un_pop_df = un_pop %>% 
   # Filter to 2020, use the Medium Variant and remove Aggregated regions
@@ -70,7 +74,8 @@ un_pop_df = un_pop %>%
 # COVID Policy Data -------------------------------------------------------
 
 
-covid_policies = read_csv("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv", guess_max = 50000) %>%
+# covid_policies = read_csv("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv", guess_max = 50000) %>%
+covid_policies = fread("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv") %>%
   clean_names() %>% 
   filter(jurisdiction == "NAT_TOTAL") %>% 
   mutate(date = ymd(date),
@@ -98,7 +103,7 @@ policy_dict = c("c1" = "School closing",
 # Join population data by country
 covid_pop_df = covid_data %>% 
   # Pivot data first
-  pivot_longer(cols = c(-1:-5), 
+  pivot_longer(cols = c(-1:-2), 
                names_to = "date", values_to = "total_cases",
                names_transform = list(date = mdy)) %>% 
   clean_names()  %>% 
@@ -106,18 +111,17 @@ covid_pop_df = covid_data %>%
     select(un_pop_df, -loc_id), by = c("country_region" = "location")
   ) %>% 
   # Order by country, region, case type, then date
-  arrange(country_region, province_state, case_type, date) %>% 
+  arrange(country_region, case_type, date) %>% 
   # Calculate daily cases for each case type at the province/state level
-  group_by(country_region, province_state, case_type) %>% 
+  group_by(country_region, case_type) %>% 
   mutate(daily_cases = total_cases - lag(total_cases, default = 0, order_by = date),
-         daily_cases = if_else(daily_cases < 0, 0, daily_cases)) %>% 
-  ungroup()
+         daily_cases = if_else(daily_cases < 0, 0, daily_cases))
 
 
 # Aggregate to country level
 covid_country_level = covid_pop_df %>% 
   # Group by country, date, and case type, keep population constant
-  group_by(country_region, date, case_type, pop_total) %>% 
+  group_by(date, pop_total, .add=T) %>% 
   # Calculate Country level cases for each case type over time
   summarise(total_cases = sum(total_cases, na.rm=T),
             daily_cases = sum(daily_cases, na.rm=T),
@@ -127,8 +131,8 @@ covid_country_level = covid_pop_df %>%
     # Calculate rolling 7 day average for daily cases;
     # Right align means on a given day, calculate the average of the past 7 days (inclusive)
     roll_avg_7day = zoo::rollmean(daily_cases, k = 7, fill = NA, align = "right")
-  )
-
+  ) %>% 
+  ungroup()
 
 # For monthly labels, I want the label to be in the middle of the month (including current month)
 # As a result we can't really use today()
@@ -146,3 +150,9 @@ case_pal = set_names(viz_colours[c(3,7)], unique(covid_country_level$case_type))
 
 save(covid_policies, file = "covid_policies.RData")
 save(covid_country_level, file = "covid_country_level.RData")
+
+# covid_country_level %>% filter(country_region == "Norway", case_type == "confirmed", date == ymd("2020-05-18"))
+# A tibble: 1 x 7
+# country_region case_type date       pop_total total_cases daily_cases roll_avg_7day
+# <chr>          <fct>     <date>         <dbl>       <dbl>       <dbl>         <dbl>
+#   1 Norway         confirmed 2020-05-18     5421.        8257           8          17.9
