@@ -34,7 +34,7 @@ options(reactable.theme = reactableTheme(
 )
 )
 
-source_caption = function(sources){
+source_caption = function(sources, md=T){
   if(missing(sources)){
     stop("Need to provide a vector of sources to the sources argument")
   }
@@ -42,7 +42,7 @@ source_caption = function(sources){
   str_c(
     "Source", if(length(sources) > 1){"s"}, ": ",
     str_c(sources, collapse = "; "),
-    "<br><br>",
+    if_else(md, "<br><br>", "\n\n"),
     "Visualized by @MokeEire"
   )
 }
