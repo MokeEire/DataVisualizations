@@ -28,7 +28,7 @@ library(reactable)
 
 
 
-load_new_data = F
+load_new_data = T
 
 if(load_new_data){
     here("scripts",
@@ -75,18 +75,20 @@ options(reactable.theme = reactableTheme(
 
 
 ui <- fluidPage(title = "COVID Lockdown Policies",
-    theme = "app.css",
+    theme = "app.css", 
 
 
-    fluidRow(
-    # div(class = "container-fluid",
-        h4(class = "navbar-brand", "COVID Lockdown Policies")
+    fluidRow(class = "col-sm-offset-1", 
+                h3("A Visualization of COVID Policy Responses"),
+                h4("Explore how and when a country put lockdown policies in place")
+            # div(class = "container-fluid",
+    
+        
             # )
         ),
     
     # Filters -----
-    fluidRow(style = 'display:flex; flex-flow:row; justify-content: space-around; max-width:80%;',
-        
+    fluidRow(class = "col-sm-offset-1", style = 'display:flex; flex-flow:row;',
         tags$script('
                                 var dimension = [0, 0];
                                 $(document).on("shiny:connected", function(e) {
@@ -277,6 +279,8 @@ server <- function(input, output) {
         
     })
     
+    excess_deaths
+    
     # Cases viz ----
     cases_viz = reactive({
         multiple_cases = (length(input$case_type) > 1)
@@ -313,7 +317,7 @@ server <- function(input, output) {
                   # hide the minor grid lines
                   panel.grid.minor = element_blank(),
                   # hide vertical major grid lines
-                  panel.grid.major.x = element_blank(),
+                  # panel.grid.major.x = element_blank(),
                   axis.line = element_blank(),
                   axis.ticks.x.top = element_line(colour = my_col_pal[4]),
                   axis.ticks.length.x.top = unit(1, "mm"),
@@ -393,7 +397,7 @@ server <- function(input, output) {
         case_label = if_else(length(input$case_type) == 3, "All case types", tolower(str_c(input$case_type, collapse = " & ")))
         
         div(class = "tbl-header",
-            h3(str_c(input$country, "'s COVID response"), class = "tbl-title"),
+            # h3(str_c(input$country, "'s COVID response"), class = "tbl-title"),
             h4(str_c("Daily cases, ", case_label, ", (rolling seven-day avg.) and the implementation of lockdown policies"),
                class = "tbl-subtitle")
         )
@@ -450,7 +454,7 @@ server <- function(input, output) {
                 borderless = T, 
                 highlight = F, 
                 wrap = F, 
-                height = policy_height(), style = list(lineHeight = round(((policy_height()/8)/16)-.65, 2)),
+                height = policy_height(), style = list(lineHeight = round(((policy_height()/8)/16)-.6, 2)),
                 defaultColDef = colDef(
                     header = "", 
                     headerStyle = list(display = "none"),
@@ -462,6 +466,7 @@ server <- function(input, output) {
             )
     })
     
+    # UI elements -----
     output$circles = renderUI({
         if(class(need(input$c1, label = "C1")) == "character"){
             div(class = "policy-circles",
@@ -506,7 +511,7 @@ server <- function(input, output) {
                         HTML()
                 )
             ) %>% 
-                tagAppendAttributes(style = str_c("line-height:", round(((policy_height()/8)/16)-.65, 2)))
+                tagAppendAttributes(style = str_c("line-height:", round(((policy_height()/8)/16)-.54, 2)))
             
         } else {
             policy_inputs = list(
@@ -563,16 +568,16 @@ server <- function(input, output) {
                         HTML()
                 )
             ) %>% 
-                tagAppendAttributes(style = str_c("line-height:", round(((policy_height()/8)/16)-.65, 2)))
+                tagAppendAttributes(style = str_c("line-height:", round(((policy_height()/8)/16)-.54, 2)))
         }
         
         
     })
     
     output$policy_dropdowns = renderUI({ 
-        div(style = str_c("line-height:", round(((policy_height()/8)/16)-.65, 2), ";width:90%;"),
+        div(style = str_c("font-size:1.4rem;line-height:", round(((policy_height()/8)/16)-.65, 2), ";width:90%;"),
                # reactableOutput(outputId = "policy_viz_rt", height = "auto")
-            dropdown(label = "School closing", circle = F, icon = icon("graduation-cap"), status = "policy",
+            dropdown(label = "School closing", circle = F, icon = icon("graduation-cap"), status = "policy", 
                         margin = "0", 
                         awesomeRadio(
                             inputId = "c1",
