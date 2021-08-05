@@ -3,7 +3,7 @@ library(tidyverse)
 library(ggtext)
 library(ggrepel)
 library(reactable)
-library(patchwork)
+library(bslib)
 
 my_col_pal = str_c("#", 
                    c("f0fafa", # background
@@ -28,10 +28,24 @@ options(reactable.theme = reactableTheme(
   stripedColor = my_col_pal[4],
   highlightColor = my_col_pal[7],
   style = list(
-    fontFamily = "Roboto, sans-serif",
+    fontFamily = "Noto Sans, sans-serif",
     fontSize = "0.75rem"
   )
 )
+)
+
+shiny_theme <- bs_theme(
+  bg = my_col_pal[1], 
+  fg = my_col_pal[2], 
+  primary = my_col_pal[5], 
+  secondary = my_col_pal[6],
+  success = my_col_pal[8],
+  info = my_col_pal[7],
+  warning = my_col_pal[10],
+  danger = my_col_pal[9],
+  base_font = "Noto Sans",
+  heading_font = "Cabin Condensed",
+  code_font = "Source Code Pro"
 )
 
 source_caption = function(sources){
