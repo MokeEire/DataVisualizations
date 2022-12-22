@@ -147,12 +147,14 @@ policy_dict = c("c1" = "School closing",
 # Join population data by country
 covid_pop_df = covid_data %>% 
   # Pivot data first
-  pivot_longer(cols = c(-1:-2), 
+  pivot_longer(cols = c(-1:-3), 
                names_to = "date", values_to = "total_cases",
                names_transform = list(date = mdy)) %>% 
+  mutate(year = year(date), .before = date) %>% 
   clean_names()  %>% 
+  # Join UN data
   left_join(
-    select(un_pop_df, -loc_id), by = c("country_region" = "location")
+    un_pop_prep, by = c("country_coded" = "iso2", "year")
   ) %>% 
   # Order by country, region, case type, then date
   arrange(country_region, case_type, date) %>% 
@@ -165,7 +167,7 @@ covid_pop_df = covid_data %>%
 # Aggregate to country level
 covid_country_level = covid_pop_df %>% 
   # Group by country, date, and case type, keep population constant
-  group_by(date, pop_total, .add=T) %>% 
+  group_by(country_coded, year, date, pop_total, .add=T) %>% 
   # Calculate Country level cases for each case type over time
   summarise(total_cases = sum(total_cases, na.rm=T),
             daily_cases = sum(daily_cases, na.rm=T),
