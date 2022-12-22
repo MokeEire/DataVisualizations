@@ -2,6 +2,7 @@ library(tidyverse)
 library(lubridate)
 library(janitor)
 library(data.table)
+library(countrycode)
 
 # COVID Case Data ---------------------------------------------------------
 
@@ -24,7 +25,8 @@ covid_data = imap_dfr(case_urls,
                       .id = "case_type") %>% 
   select(`Province/State`, `Country/Region`, case_type, everything()) %>% 
   # Remove cruise ships
-  filter(!(`Country/Region` %in% c("Diamond Princess", "MS Zaandam"))) %>% 
+  filter(!(`Country/Region` %in% c("Diamond Princess", "MS Zaandam", 
+                                   "Summer Olympics 2020", "Winter Olympics 2022"))) %>% 
   # clean up country names
   mutate(`Country/Region` = str_replace_all(`Country/Region`, c("Cote d'Ivoire" = "Côte d'Ivoire",
                                                                 "Korea, South" = "South Korea",
@@ -35,40 +37,81 @@ covid_data = imap_dfr(case_urls,
                                                                 "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
                                                                 "Saint Kitts and Nevis" = "St. Kitts and Nevis",
                                                                 "Taiwan\\*" = "Taiwan")),
+         country_coded = countrycode(sourcevar = `Country/Region`, origin = "country.name", destination = "iso2c", nomatch = NA_character_),
+         country_coded = case_when(`Country/Region` == "Kosovo" ~ "XK",
+                                   `Country/Region` == "Micronesia" ~ "FM",
+                                   T ~ country_coded),
          # Make case_type a factor to bring deaths geom to front
          case_type = factor(case_type, levels = c("confirmed", "deaths", ordered = T))) %>% 
-  group_by(`Country/Region`, case_type) %>% 
-  summarise(across(matches("20|21"), sum), .groups = "drop")
+  group_by(`Country/Region`, country_coded, case_type) %>% 
+  summarise(across(matches("2[0-2]"), sum), .groups = "drop")
 
 
 # World Population Data ---------------------------------------------------
 
-# UN Population data - https://population.un.org/wpp/Download/Standard/CSV/
-un_pop = fread("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
 
-un_pop_df = un_pop %>% 
-  # Filter to 2020, use the Medium Variant and remove Aggregated regions
-  filter(Time == 2020, Variant == "Medium", LocID <= 900) %>% 
-  select(Location, LocID, PopMale:PopDensity) %>% 
+collect_un_pop_data = function(covid_df, start_year = "2020", end_year = "2022"){
+  # Prepare Query using country codes from COVID data
+  locs_to_query = str_c(unique(covid_df$country_coded), collapse = ",")
+  
+  # Convert ISO2 codes to location IDs for the API
+  # https://population.un.org/dataportal/about/dataapi#locations
+  loc_ids = fromJSON(str_c("https://population.un.org/dataportalapi/api/v1/locations/", locs_to_query, "?sort=id")) %>% 
+    pull(id) %>% 
+    str_c(collapse = ",")
+  
+  base_query = "https://population.un.org/dataportalapi/api/v1/data/indicators/49/locations/"
+  
+  initial_query = URLencode(str_c(base_query, loc_ids, 
+                                  "?startYear=", start_year, "&endYear=", end_year,
+                                  # Filter to median pop projection for both sexes
+                                  "&variants=4&sexes=3"))
+  
+  results = fromJSON(initial_query)
+  
+  # Add the data the a df
+  results_df = results$data
+  
+  # prepare queries for all the remaining pages
+  remaining_pages = URLencode(str_c(base_query, loc_ids, 
+                                "?startYear=", start_year, "&endYear=", end_year,
+                                "&variants=4&sexes=3",
+                                "&pageNumber=", 2:results$pages, "&pageSize=100"))
+  
+  # Map over them in parallel
+  remaining_pages_df = future_map(remaining_pages, fromJSON) %>% 
+    # Pluck the data element and combine into a df
+    future_map_dfr(pluck, "data")
+  
+  # Combine all pages
+  results_df = bind_rows(results_df, remaining_pages_df)
+  
+  as_tibble(results_df)
+}
+
+un_pop_df = collect_un_pop_data(covid_data)
+
+un_pop_prep = un_pop_df %>% 
+  select(locationId:iso2, timeLabel, pop_total = value) %>% 
   clean_names() %>% 
   # Clean up country names
-  mutate(location = str_replace_all(location, c("Bolivia \\(Plurinational State of\\)" = "Bolivia",
-                                                "Iran \\(Islamic Republic of\\)" = "Iran",
-                                                "China, Taiwan Province of China" = "Taiwan",
-                                                "Viet Nam" = "Vietnam",
-                                                "Republic of Korea" = "South Korea",
-                                                "Republic of Moldova" = "Moldova",
-                                                "United States of America" = "United States",
-                                                "Venezuela \\(Bolivarian Republic of\\)" = "Venezuela",
-                                                "Democratic Republic of the Congo" = "Congo, Dem. Rep.",
-                                                "^Congo$" = "Congo, Rep.",
-                                                "United Republic of Tanzania" = "Tanzania",
-                                                "Syrian Arab Republic" = "Syria",
-                                                "Russian Federation" = "Russia",
-                                                "Lao People's Democratic Republic" = "Laos",
-                                                "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
-                                                "Saint Kitts and Nevis" = "St. Kitts and Nevis",
-                                                "Brunei Darussalam" = "Brunei")))
+  mutate(location_clean = str_replace_all(location, c("Bolivia \\(Plurinational State of\\)" = "Bolivia",
+                                                      "Iran \\(Islamic Republic of\\)" = "Iran",
+                                                      "China, Taiwan Province of China" = "Taiwan",
+                                                      "Viet Nam" = "Vietnam",
+                                                      "Republic of Korea" = "South Korea",
+                                                      "Republic of Moldova" = "Moldova",
+                                                      "United States of America" = "United States",
+                                                      "Venezuela \\(Bolivarian Republic of\\)" = "Venezuela",
+                                                      "Democratic Republic of the Congo" = "Congo, Dem. Rep.",
+                                                      "^Congo$" = "Congo, Rep.",
+                                                      "United Republic of Tanzania" = "Tanzania",
+                                                      "Syrian Arab Republic" = "Syria",
+                                                      "Russian Federation" = "Russia",
+                                                      "Lao People's Democratic Republic" = "Laos",
+                                                      "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
+                                                      "Saint Kitts and Nevis" = "St. Kitts and Nevis",
+                                                      "Brunei Darussalam" = "Brunei")))
 
 
 # COVID Policy Data -------------------------------------------------------
