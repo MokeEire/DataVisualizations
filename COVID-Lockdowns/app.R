@@ -282,8 +282,7 @@ server <- function(input, output) {
         
     })
     
-    excess_deaths
-    
+
     # Cases viz ----
     cases_viz = reactive({
         multiple_cases = (length(input$case_type) > 1)
