@@ -53,9 +53,31 @@ if(load_new_data){
     load("covid_policies.RData")
     load("covid_country_level.RData")
     
-    case_pal = set_names(viz_colours[c(3,7)], unique(covid_country_level$case_type))
-    
+
 }
+
+policy_circles = function(policy_df, policy, policy_inputs = 1, colour){
+  policy_col = substitute(policy)
+  max_policy_response = policy_df[, max(eval(policy_col), na.rm=T)]
+  # Row div
+  div(class = "circles-row", style = str_c("color:", colour),
+      reduce(
+        purrr::flatten(list(rerun(policy_inputs, icon("circle-dot")),
+                            rerun(max_policy_response - policy_inputs, icon("circle")))), paste) %>% 
+        HTML()
+  )
+}
+
+# Visualization utilities
+case_pal = set_names(viz_colours[c(3,7)], unique(covid_country_level$case_type))
+
+# For monthly labels, I want the label to be in the middle of the month (including current month)
+# As a result we can't really use today()
+
+global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
+
+global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), length.out = 7)
+
 
 options(reactable.theme = reactableTheme(
     color = "black",
