@@ -111,14 +111,15 @@ un_pop_prep = un_pop_df %>%
                                                       "Lao People's Democratic Republic" = "Laos",
                                                       "Saint Vincent and the Grenadines" = "St. Vincent and the Grenadines",
                                                       "Saint Kitts and Nevis" = "St. Kitts and Nevis",
-                                                      "Brunei Darussalam" = "Brunei")))
+                                                      "Brunei Darussalam" = "Brunei")),
+         year = as.integer(time_label))
 
 
 # COVID Policy Data -------------------------------------------------------
 
 
 # covid_policies = read_csv("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv", guess_max = 50000) %>%
-covid_policies = fread("https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv") %>%
+covid_policies = fread("https://github.com/OxCGRT/covid-policy-tracker-legacy/raw/main/legacy_data_202207/OxCGRT_latest.csv") %>%
   clean_names() %>% 
   filter(jurisdiction == "NAT_TOTAL") %>% 
   mutate(date = ymd(date),
