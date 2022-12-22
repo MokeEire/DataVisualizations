@@ -570,7 +570,7 @@ server <- function(input, output) {
                         )
                ) %>% 
                 tagAppendAttributes(style = str_c("color:", viz_colours[2])),
-               dropdown(label = "Cancel public events", circle = F, icon = icon("calendar-times-o"), status = "policy",
+               dropdown(label = "Cancel public events", circle = F, icon = icon("calendar-xmark"), status = "policy",
                         margin = "0",
                         awesomeRadio(width = "100%",
                                      inputId = "c3",
