@@ -1,8 +1,6 @@
-library(tidyverse)
-library(lubridate)
-library(janitor)
-library(data.table)
-library(countrycode)
+library(jsonlite)
+library(furrr)
+plan(multisession)
 
 # COVID Case Data ---------------------------------------------------------
 
