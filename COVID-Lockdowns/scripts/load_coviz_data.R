@@ -46,7 +46,7 @@ covid_data = imap_dfr(case_urls,
 
 
 # World Population Data ---------------------------------------------------
-
+# Test API calls here: https://population.un.org/dataportalapi/index.html
 
 collect_un_pop_data = function(covid_df, start_year = "2020", end_year = "2022"){
   # Prepare Query using country codes from COVID data
@@ -178,19 +178,6 @@ covid_country_level = covid_pop_df %>%
   ) %>% 
   ungroup()
 
-# For monthly labels, I want the label to be in the middle of the month (including current month)
-# As a result we can't really use today()
-
-global_date_labels = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-15"), by = "1 month")
-
-global_date_ticks = seq.Date(to = max(covid_country_level$date), from = ymd("2020-01-01"), length.out = 7)
-
-
-
-
-# Visualization utilities -------------------------------------------------
-
-case_pal = set_names(viz_colours[c(3,7)], unique(covid_country_level$case_type))
 
 save(covid_policies, file = "covid_policies.RData")
 save(covid_country_level, file = "covid_country_level.RData")
@@ -200,3 +187,19 @@ save(covid_country_level, file = "covid_country_level.RData")
 # country_region case_type date       pop_total total_cases daily_cases roll_avg_7day
 # <chr>          <fct>     <date>         <dbl>       <dbl>       <dbl>         <dbl>
 #   1 Norway         confirmed 2020-05-18     5421.        8257           8          17.9
+
+
+# Excess deaths -----------------------------------------------------------
+
+# download.file(url = "https://github.com/TheEconomist/covid-19-excess-deaths-tracker/archive/master.zip", 
+#               destfile = "data/excess_deaths.zip")
+# 
+# excess_deaths = map_dfr(tolower(unique(covid_country_level$country_region)), 
+#     ~tryCatch(fread(str_c("https://raw.githubusercontent.com/TheEconomist/covid-19-excess-deaths-tracker/master/output-data/excess-deaths/",
+#                           .x, "_excess_deaths.csv"), 
+#                     colClasses = c("region_code" =  "character", "end_date" = "Date")), 
+#               error = function(e) {
+#                 NULL
+#                 }
+#               )
+#     )
