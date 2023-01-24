@@ -1,0 +1,107 @@
+---
+title: "World Data Visualization Prize"
+format: html
+editor: visual
+---
+
+[The World Data Visualization Prize](https://wdvp.worldgovernmentsummit.org/)
+
+# Libraries
+
+```{r}
+#| label: setup
+#| message: false
+library(googlesheets4)
+library(tidyverse)
+library(skimr)
+```
+
+Authorize Google Sheets API
+
+```{r}
+googlesheets4::gs4_auth()
+```
+
+# Data
+
+[Original Dataset](https://geni.us/WDVPdata/)
+
+### Resources
+
+[Getting your data into R from Google Sheets](https://arbor-analytics.com/post/getting-your-data-into-r-from-google-sheets/)
+
+```{r}
+data_url = "https://docs.google.com/spreadsheets/d/1GtlfVKz5VQiXTtNXyhr_xyt1sr5Bngi_ITWOSuFisWc/edit#gid=1693068612"
+
+# Get sheet names
+(data_sheets = sheet_names(data_url))
+
+```
+
+```{r}
+
+# Read the What Just Happened data
+past_df = read_sheet(data_url, sheet = data_sheets[2])
+
+past_cols = c("indicator", "indicator_desc", "metric", 
+              "2009", str_c("201", 0:9), "2020", "2021", 
+              "empty", "change_10_years", "source_name", "source_url")
+
+data_ranges = list(
+  "health" = "A3:T25",
+  "energy" = "A29:T45",
+  "qol" = "A48:T60",
+  "ed_dev" = "A63:T75",
+  "sust" = "A80:T88",
+  "econ" = "A92:T96"
+)
+```
+
+```{r}
+glimpse(past_df, width = 80)
+```
+
+```{r}
+past_health = read_sheet(data_url, sheet = data_sheets[2], range = "A3:T25",
+                         col_names = past_cols, 
+                         col_types = "cccnnnnnnnnnnnnn-ncc", 
+                         na = c("", "-"))
+
+glimpse(past_health)
+```
+
+```{r}
+past_dfs = map(data_ranges, 
+               \(data) read_sheet(ss = data_url, range = data, 
+                                  sheet = data_sheets[2], col_names = past_cols, 
+                                  col_types = "cccnnnnnnnnnnnnn-ncc", 
+                                  na = c("", "-"), trim_ws = T)
+               )
+
+# glimpse(past_dfs)
+```
+
+## Health
+
+```{r}
+View(past_dfs$health)
+```
+
+```{r}
+skim(past_dfs$health)
+```
+
+## Energy
+
+```{r}
+View(past_dfs$energy)
+```
+
+```{r}
+skim(past_dfs$energy)
+```
+
+```{r}
+past_dfs$energy %>% 
+  filter(metric == "%")
+```
